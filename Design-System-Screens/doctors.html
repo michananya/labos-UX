@@ -157,9 +157,10 @@
     </div>
 
     <div class="action-bar">
-      <labos-button id="btn-edit"     variant="default" icon="edit"   onclick="requireSelection('dialog-edit')">Edit</labos-button>
+
       <labos-button id="btn-delete"   variant="default" icon="delete" onclick="requireSelection('dialog-delete')">Delete</labos-button>
       <labos-split-button id="btn-inactive" label="Set as Inactive" icon="block" variant="default"></labos-split-button>
+      <labos-button id="btn-edit"     variant="default" icon="edit"   onclick="requireSelection('dialog-edit')">Edit</labos-button>
     </div>
   </div>
 
@@ -181,10 +182,13 @@
     <labos-autocomplete id="add-specialty" placeholder="Specialty"></labos-autocomplete>
   </div>
   <div class="form-row">
-    <labos-autocomplete id="add-dept"  placeholder="Department"></labos-autocomplete>
-    <labos-input id="add-phone" placeholder="Phone" type="tel"></labos-input>
+    <labos-autocomplete id="add-dept"     placeholder="Department"></labos-autocomplete>
+    <labos-autocomplete id="add-hospital" placeholder="Hospital"></labos-autocomplete>
   </div>
-  <labos-input id="add-email" placeholder="Email" type="email"></labos-input>
+  <div class="form-row">
+    <labos-input id="add-phone" placeholder="Phone" type="tel"></labos-input>
+    <labos-input id="add-email" placeholder="Email" type="email"></labos-input>
+  </div>
   <labos-button slot="footer" variant="default" cancel icon="close" onclick="closeDialog('dialog-add')">Cancel</labos-button>
   <labos-button slot="footer" variant="accent" icon="check" onclick="saveAddDoctor()">Save</labos-button>
 </labos-dialog>
@@ -201,10 +205,13 @@
     <labos-autocomplete id="edit-specialty" placeholder="Specialty"></labos-autocomplete>
   </div>
   <div class="form-row">
-    <labos-autocomplete id="edit-dept"  placeholder="Department"></labos-autocomplete>
-    <labos-input id="edit-phone" placeholder="Phone" type="tel"></labos-input>
+    <labos-autocomplete id="edit-dept"     placeholder="Department"></labos-autocomplete>
+    <labos-autocomplete id="edit-hospital" placeholder="Hospital"></labos-autocomplete>
   </div>
-  <labos-input id="edit-email" placeholder="Email" type="email"></labos-input>
+  <div class="form-row">
+    <labos-input id="edit-phone" placeholder="Phone" type="tel"></labos-input>
+    <labos-input id="edit-email" placeholder="Email" type="email"></labos-input>
+  </div>
   <labos-button slot="footer" variant="default" cancel icon="close" onclick="closeDialog('dialog-edit')">Cancel</labos-button>
   <labos-button slot="footer" variant="accent" icon="check" onclick="saveEditDoctor()">Save Changes</labos-button>
 </labos-dialog>
@@ -242,18 +249,19 @@
     { field: 'license',    label: 'License #' },
     { field: 'specialty',  label: 'Specialty' },
     { field: 'department', label: 'Department' },
+    { field: 'hospital',   label: 'Hospital' },
     { field: 'email',      label: 'Email' },
     { field: 'phone',      label: 'Mobile number' },
   ];
 
   const ALL_ROWS = [
-    { title: 'Dr.',   firstName: 'Sarah',   lastName: 'Cohen',     license: 'MD-12345', specialty: 'Cardiology',   department: 'Internal Medicine', phone: '555-0101', email: 'sarah.cohen@hospital.com' },
-    { title: 'Dr.',   firstName: 'David',   lastName: 'Levy',      license: 'MD-23456', specialty: 'Neurology',    department: 'Neurology',         phone: '555-0102', email: 'david.levy@hospital.com' },
-    { title: 'Prof.', firstName: 'Rachel',  lastName: 'Ben-David', license: 'MD-34567', specialty: 'Oncology',     department: 'Oncology',          phone: '555-0103', email: 'rachel.bendavid@hospital.com' },
-    { title: 'Dr.',   firstName: 'Michael', lastName: 'Shapiro',   license: 'MD-45678', specialty: 'Orthopedics',  department: 'Surgery',           phone: '555-0104', email: 'michael.shapiro@hospital.com' },
-    { title: 'Dr.',   firstName: 'Yael',    lastName: 'Katz',      license: 'MD-56789', specialty: 'Pediatrics',   department: 'Pediatrics',        phone: '555-0105', email: 'yael.katz@hospital.com' },
-    { title: 'Prof.', firstName: 'Avi',     lastName: 'Mizrahi',   license: 'MD-67890', specialty: 'Cardiology',   department: 'Cardiology',        phone: '555-0106', email: 'avi.mizrahi@hospital.com' },
-    { title: 'Dr.',   firstName: 'Noa',     lastName: 'Friedman',  license: 'MD-78901', specialty: 'Dermatology',  department: 'Dermatology',       phone: '555-0107', email: 'noa.friedman@hospital.com' },
+    { title: 'Dr.',   firstName: 'Sarah',   lastName: 'Cohen',     license: 'MD-12345', specialty: 'Cardiology',   department: 'Internal Medicine', hospital: 'Ichilov',    phone: '555-0101', email: 'sarah.cohen@hospital.com' },
+    { title: 'Dr.',   firstName: 'David',   lastName: 'Levy',      license: 'MD-23456', specialty: 'Neurology',    department: 'Neurology',         hospital: 'Sheba',      phone: '555-0102', email: 'david.levy@hospital.com' },
+    { title: 'Prof.', firstName: 'Rachel',  lastName: 'Ben-David', license: 'MD-34567', specialty: 'Oncology',     department: 'Oncology',          hospital: 'Hadassah',   phone: '555-0103', email: 'rachel.bendavid@hospital.com' },
+    { title: 'Dr.',   firstName: 'Michael', lastName: 'Shapiro',   license: 'MD-45678', specialty: 'Orthopedics',  department: 'Surgery',           hospital: 'Ichilov',    phone: '555-0104', email: 'michael.shapiro@hospital.com' },
+    { title: 'Dr.',   firstName: 'Yael',    lastName: 'Katz',      license: 'MD-56789', specialty: 'Pediatrics',   department: 'Pediatrics',        hospital: 'Schneider',  phone: '555-0105', email: 'yael.katz@hospital.com' },
+    { title: 'Prof.', firstName: 'Avi',     lastName: 'Mizrahi',   license: 'MD-67890', specialty: 'Cardiology',   department: 'Cardiology',        hospital: 'Sheba',      phone: '555-0106', email: 'avi.mizrahi@hospital.com' },
+    { title: 'Dr.',   firstName: 'Noa',     lastName: 'Friedman',  license: 'MD-78901', specialty: 'Dermatology',  department: 'Dermatology',       hospital: 'Beilinson',  phone: '555-0107', email: 'noa.friedman@hospital.com' },
   ];
 
   let currentRows            = [...ALL_ROWS];
@@ -291,10 +299,16 @@
     'Pathology', 'Pediatrics', 'Psychiatry', 'Radiology', 'Surgery', 'Urology',
   ].map(s => ({ label: s, value: s }));
 
+  const HOSPITAL_OPTIONS = [
+    'Beilinson', 'Hadassah', 'Ichilov', 'Rambam', 'Schneider', 'Shaare Zedek', 'Sheba', 'Soroka',
+  ].map(s => ({ label: s, value: s }));
+
   document.getElementById('add-specialty').setOptions(SPECIALTY_OPTIONS);
   document.getElementById('add-dept').setOptions(DEPT_OPTIONS);
+  document.getElementById('add-hospital').setOptions(HOSPITAL_OPTIONS);
   document.getElementById('edit-specialty').setOptions(SPECIALTY_OPTIONS);
   document.getElementById('edit-dept').setOptions(DEPT_OPTIONS);
+  document.getElementById('edit-hospital').setOptions(HOSPITAL_OPTIONS);
 
   // ── Autocomplete ──────────────────────────────────────────────
   document.getElementById('doctor-search').setOptions(
@@ -388,6 +402,7 @@
       document.getElementById('edit-license').value   = r.license;
       document.getElementById('edit-specialty').value = r.specialty;
       document.getElementById('edit-dept').value      = r.department;
+      document.getElementById('edit-hospital').value  = r.hospital;
       document.getElementById('edit-phone').value     = r.phone;
       document.getElementById('edit-email').value     = r.email;
     }
