@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analyzer Control — LabOS</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<script src="../shared/labos-components.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+    background: #ffffff;
+    color: #333;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  :root {
+    --primary:      #265F68;
+    --primary-dark: #1F5156;
+    --primary-20:   #D5E0E1;
+    --warn:         #D20000;
+    --surface:      #F5F5F5;
+    --white:        #ffffff;
+  }
+
+  labos-navbar { flex-shrink: 0; }
+  .screen-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+  .screen-top  { padding: 16px 16px 0; flex-shrink: 0; }
+
+  .search-zone { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .action-bar  { display: flex; align-items: center; gap: 8px; height: 36px; margin-top: 16px; flex-shrink: 0; }
+
+  labos-grid        { margin: 0 16px; flex: 1; display: flex; flex-direction: column; }
+  labos-master-list { flex: 1; min-height: 0; }
+
+  /* ── Master-list detail panel ── */
+  .detail-empty    { padding: 24px 16px; color: #999; font-size: 13px; }
+  .is-bar          { display:flex; align-items:center; height:40px; background:#fff; overflow:hidden; border-bottom:1px solid #eee; }
+  .is-sep          { flex-shrink:0; width:1px; align-self:stretch; background:#dddddd; margin:0 10px; }
+  .is-c            { display:flex; flex-direction:column; height:40px; flex-shrink:0; }
+  .is-c__v         { padding-top:8px; font:400 14px/14px 'Open Sans',sans-serif; color:#333; white-space:nowrap; letter-spacing:.1px; }
+  .is-c__lbl       { margin-top:5px; font:600 11px/11px 'Open Sans',sans-serif; color:#999; white-space:nowrap; letter-spacing:.1px; }
+  .is-id           { display:flex; align-items:center; flex-shrink:0; padding-left:8px; }
+  .is-id__body     { display:flex; flex-direction:column; height:40px; padding-top:4px; padding-bottom:2px; justify-content:space-between; }
+  .is-id__row1     { display:flex; align-items:flex-end; gap:8px; }
+  .is-id__name     { font:600 20px/1 'Open Sans',sans-serif; color:#333; letter-spacing:.1px; white-space:nowrap; }
+  .is-id__chip     { background:#fff; border:1px solid #ccc; border-radius:3px; padding:0 7px; height:19px; display:inline-flex; align-items:center; font:600 11px/1 'Open Sans',sans-serif; color:#333; white-space:nowrap; }
+  .is-id__chip--gn { background:#5aba47; border-color:#5aba47; color:#fff; }
+  .is-id__sub      { font:600 11px/1 'Open Sans',sans-serif; color:#999; letter-spacing:.1px; white-space:nowrap; }
+  .item-actions    { display: flex; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #eee; flex-wrap: wrap; }
+  .detail-content  { padding: 16px; }
+  .detail-meta     { display: flex; flex-direction: column; gap: 10px; }
+  .detail-field    { display: flex; flex-direction: column; gap: 2px; }
+  .detail-label    { font-size: 11px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .detail-value    { font-size: 14px; color: #333; }
+
+  /* ── Splash ── */
+  #splash {
+    position: fixed; inset: 0; background: #fff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 9999; transition: opacity 0.6s ease; --draw-speed: 0.75;
+  }
+  #splash.fade-out { opacity: 0; pointer-events: none; }
+  #splash svg { width: 300px; }
+  #splash .greeting {
+    font-family: 'Open Sans', sans-serif; font-size: 18px; font-weight: 300; color: #333;
+    margin-top: 28px; opacity: 0; animation: splashGreeting 0.8s ease 0.7s both;
+  }
+  @keyframes splashGreeting {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── SPLASH ── -->
+<div id="splash"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 716.95 164.92">
+  <defs><style>
+    .cls-1,.cls-2{stroke:#333}.cls-1,.cls-2,.cls-3{fill:none;stroke-linecap:round;stroke-width:17px}.cls-1,.cls-3{stroke-linejoin:round}.cls-2{stroke-miterlimit:10}.cls-3{stroke:#00b08a}
+    .draw{stroke-dasharray:1;stroke-dashoffset:1}.draw-rev{stroke-dasharray:1;stroke-dashoffset:-1}
+    @keyframes draw{to{stroke-dashoffset:0}}
+    @keyframes breathe{0%,100%{stroke-opacity:1}50%{stroke-opacity:.72}}
+    .el-cloud{animation:draw calc(.85s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.05s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-divider{animation:draw calc(.3s * var(--draw-speed,1)) ease-out calc(.55s * var(--draw-speed,1)) both}
+    .el-note-r{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-note-l{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-circle{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.1s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-s{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.6s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+  </style></defs>
+  <g>
+    <path pathLength="1" class="cls-3 draw-rev el-cloud" d="M195.39,156.4H49.82s-41.32,1.93-41.32-38.95c0-37.37,38.71-40.71,38.71-40.71,0,0,.91-22.5,19.57-32.15,19.12-9.89,34.43.18,34.43.18,0,0,5.03-24.98,37.85-34.19,31.93-8.97,56.33,14.04,56.33,14.04"/>
+    <line pathLength="1" class="cls-1 draw el-divider" x1="222.66" y1="8.5" x2="222.66" y2="156.42"/>
+    <path pathLength="1" class="cls-2 draw el-note-r" d="M394.68,70.21c5.37-2.28,11.28-3.53,17.48-3.53,24.78,0,44.87,20.09,44.87,44.87s-20.09,44.87-44.87,44.87-44.87-20.09-44.87-44.87V9.06"/>
+    <path pathLength="1" class="cls-2 draw el-note-l" d="M312.94,152.26c-5.37,2.28-11.28,3.53-17.48,3.53-24.78,0-44.87-20.09-44.87-44.87,0-24.78,20.09-44.87,44.87-44.87s44.87,20.09,44.87,44.87c0,6.2,0,45.49,0,45.49"/>
+    <circle pathLength="1" class="cls-3 draw el-circle" cx="546.26" cy="92.48" r="63.94"/>
+    <path pathLength="1" class="cls-3 draw el-s" d="M636.41,136.15s7.35,20.27,36.3,20.27c28.96,0,35.74-23.88,35.74-30.88,0-11.32-2.39-25.63-36.02-33.02-33.63-7.4-36.02-22.98-36.02-33.02,0-7,6.78-30.88,35.74-30.88s36.3,20.27,36.3,20.27"/>
+  </g>
+</svg>
+<p id="splash-greeting" class="greeting"></p>
+</div>
+
+<!-- ── NAVBAR ── -->
+<labos-navbar
+  id="ac-navbar"
+  breadcrumbs='[{"label":"Analyzer control"}]'
+  user-name="Angela Doe"
+  user-org="LabOS NJ Laboratory">
+</labos-navbar>
+
+<labos-filter id="ac-filter"></labos-filter>
+
+<!-- ── SCREEN BODY ── -->
+<div class="screen-body">
+  <div class="screen-top">
+
+    <!-- Row 1: search + filter + view toggle -->
+    <div class="search-zone">
+      <labos-rounded-search id="main-search" placeholder="Search for analyzer" style="width:300px"></labos-rounded-search>
+      <labos-button id="btn-filter" shape="rounded" icon="filter_list" title="Filters"></labos-button>
+      <labos-button id="btn-view-toggle" shape="rounded" icon="vertical_split" title="Toggle view" style="margin-left:auto"></labos-button>
+    </div>
+
+    <!-- Row 2: action bar -->
+    <div class="action-bar">
+      <labos-button id="btn-run"  icon="play_arrow">Run</labos-button>
+      <labos-button id="btn-stop" icon="stop">Stop</labos-button>
+      <labos-button-menu id="btn-log" type="menu" label="Log" icon="history"></labos-button-menu>
+    </div>
+
+  </div>
+
+  <labos-grid id="grid" title="Analyzers"></labos-grid>
+  <labos-master-list id="master-list" style="display:none"></labos-master-list>
+</div>
+
+<!-- ── SPLASH JS ── -->
+<script>
+  (function() {
+    var s = document.getElementById('splash');
+    var isReload = (performance.getEntriesByType('navigation')[0] || {}).type === 'reload';
+    var fromNav  = sessionStorage.getItem('labos_nav') === '1';
+    sessionStorage.removeItem('labos_nav');
+    if (!isReload && fromNav) { s.remove(); return; }
+    var h = new Date().getHours();
+    var g = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+    var parts = (document.querySelector('labos-navbar').getAttribute('user-name') || '').trim().split(/\s+/);
+    var first = /^(Dr\.|Prof\.|Mr\.|Mrs\.|Ms\.)$/i.test(parts[0]) ? (parts[1] || '') : (parts[0] || '');
+    document.getElementById('splash-greeting').textContent = first ? g + ', ' + first : g;
+    setTimeout(function() {
+      s.classList.add('fade-out');
+      s.addEventListener('transitionend', function() { s.remove(); }, { once: true });
+    }, 3000);
+  })();
+</script>
+
+<script>
+  document.addEventListener('click', function(e) {
+    var path = e.composedPath ? e.composedPath() : [];
+    var a = path.find(function(el) { return el.tagName === 'A' && el.href && !el.target; });
+    if (a && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+      sessionStorage.setItem('labos_nav', '1');
+    }
+  }, true);
+</script>
+
+<script>
+  // ── Data ─────────────────────────────────────────────────────────────────
+  var ALL_ROWS = [
+    { analyzer: 'ACL1',       exe: 'acl1.exe',       ip: '192.168.1.101', port: 3001, communication: 'Active',   unmatched: 0, lastComm: '06/14/2026 08:12 AM', qc: 'Pass',                    department: 'Hematology'   },
+    { analyzer: 'AU5800',     exe: 'au5800.exe',      ip: '192.168.1.102', port: 3002, communication: 'Starting', unmatched: 2, lastComm: '06/14/2026 07:55 AM', qc: 'Warning',                 department: 'Chemistry'    },
+    { analyzer: 'IMAX1',      exe: 'imax1.exe',       ip: '192.168.1.103', port: 3003, communication: 'Active',   unmatched: 0, lastComm: '06/14/2026 08:01 AM', qc: 'Pass',                    department: 'Coagulation'  },
+    { analyzer: 'IMAX2',      exe: 'imax2.exe',       ip: '192.168.1.104', port: 3004, communication: 'Stopping', unmatched: 5, lastComm: '06/14/2026 06:44 AM', qc: 'Failed',                  department: 'Coagulation'  },
+    { analyzer: 'BARCODE_A',  exe: 'barcode_a.exe',   ip: '192.168.1.105', port: 3005, communication: 'Active',   unmatched: 0, lastComm: '06/14/2026 08:10 AM', qc: 'Pass',                    department: 'Microbiology' },
+    { analyzer: 'DxH800',     exe: 'dxh800.exe',      ip: '192.168.1.106', port: 3006, communication: 'Inactive', unmatched: 1, lastComm: '06/14/2026 07:30 AM', qc: 'Patient controls warning', department: 'Hematology'   },
+    { analyzer: 'XN-9000',    exe: 'xn9000.exe',      ip: '192.168.1.107', port: 3007, communication: 'Active',   unmatched: 0, lastComm: '06/14/2026 08:05 AM', qc: 'Pass',                    department: 'Hematology'   },
+    { analyzer: 'Architect',  exe: 'architect.exe',   ip: '192.168.1.108', port: 3008, communication: 'Stopping', unmatched: 3, lastComm: '06/14/2026 05:22 AM', qc: 'Patient controls failed',  department: 'Immunology'   },
+    { analyzer: 'Cobas 8000', exe: 'cobas8000.exe',   ip: '192.168.1.109', port: 3009, communication: 'Active',   unmatched: 0, lastComm: '06/14/2026 08:09 AM', qc: 'Reset',                   department: 'Chemistry'    },
+    { analyzer: 'BD MAX',     exe: 'bdmax.exe',        ip: '192.168.1.110', port: 3010, communication: 'Inactive', unmatched: 0, lastComm: '06/14/2026 08:00 AM', qc: 'No rules',                department: 'Microbiology' },
+  ];
+  var searchText = '';
+
+  var QC_BG = {
+    'Pass':                     'var(--green)',
+    'Failed':                   'var(--red)',
+    'Patient controls failed':  'var(--red)',
+    'Warning':                  'var(--orange)',
+    'Patient controls warning': 'var(--orange)',
+    'Reset':                    'var(--blue)',
+    'No rules':                 null,
+  };
+
+  function qcBadge(v) {
+    var bg = QC_BG[v];
+    if (bg === null) return '<labos-badge label="' + v + '" variant="empty"></labos-badge>';
+    return '<labos-badge label="' + v + '" bg="' + (bg || 'var(--primary)') + '"></labos-badge>';
+  }
+
+  var QC_CHIP_BG = {
+    'Pass':                    '#5ABA47',
+    'Failed':                  '#FF0000',
+    'Patient controls failed': '#FF0000',
+    'Warning':                 '#FFA500',
+    'Patient controls warning':'#FFA500',
+    'Reset':                   '#1773E0',
+  };
+
+  var CHIP_BASE = 'border-radius:3px;padding:0 7px;height:19px;display:inline-flex;align-items:center;font:600 11px/1 \'Open Sans\',sans-serif;white-space:nowrap;box-sizing:border-box';
+
+  function qcChip(v) {
+    var bg = QC_CHIP_BG[v];
+    if (!bg) return '<span style="' + CHIP_BASE + ';background:#fff;border:1px solid #ccc;color:#333;margin-left:4px">' + v + '</span>';
+    return '<span style="' + CHIP_BASE + ';background:' + bg + ';border:1px solid ' + bg + ';color:#fff;margin-left:4px">' + v + '</span>';
+  }
+
+  var COMM_COLOR = {
+    'Active':   '#5ABA47',
+    'Inactive': '#F1A031',
+    'Stopping': '#999999',
+    'Starting': '#4DA6FF',
+  };
+
+  function commStatus(v) {
+    var color = COMM_COLOR[v] || '#999999';
+    return '<span style="display:inline-flex;align-items:center;gap:4px">' +
+      '<span style="font-family:\'Material Icons\';font-size:16px;color:' + color + ';line-height:1;flex-shrink:0">circle</span>' +
+      v +
+      '</span>';
+  }
+
+  var COMM_GRID_COLUMNS = [
+    { field: 'date',          label: 'Date',                            sortable: true },
+    { field: 'accession',     label: 'Accession',                       sortable: true, render: function(v) {
+      return '<span style="color:var(--primary);font-weight:600">' + v + '</span>';
+    }},
+    { field: 'processStatus', label: 'Workbench result process status', sortable: true },
+  ];
+
+  var COMM_GRID_DATA = [
+    { date: '06/14/2026 08:12', accession: '27002', processStatus: 'Sending from server to workbench', test: 'APTT',    result: '',      run: 0, sampleStatus: 'Sending from server to workbench' },
+    { date: '06/14/2026 07:55', accession: '16461', processStatus: 'Sending from server to workbench', test: 'APTTMIX', result: '34.2',  run: 1, sampleStatus: 'Result received'                  },
+    { date: '06/14/2026 07:30', accession: '15084', processStatus: 'Sending from server to workbench', test: 'PT',      result: '12.1',  run: 1, sampleStatus: 'Completed'                        },
+    { date: '06/14/2026 06:44', accession: '14320', processStatus: 'Result received',                  test: 'FIBR',    result: '',      run: 0, sampleStatus: 'Pending'                          },
+    { date: '06/14/2026 06:45', accession: '13875', processStatus: 'Result received',                  test: 'TT',      result: '18.5',  run: 2, sampleStatus: 'Result received'                  },
+    { date: '06/14/2026 05:22', accession: '12903', processStatus: 'Error',                            test: 'D-DIMER', result: '',      run: 0, sampleStatus: 'Error'                            },
+    { date: '06/14/2026 04:10', accession: '11748', processStatus: 'Completed',                        test: 'vWF',     result: '102.0', run: 1, sampleStatus: 'Completed'                        },
+  ];
+
+  var QC_GRID_COLUMNS = [
+    { field: 'testCode', label: 'Test code', sortable: true },
+    { field: 'testName', label: 'Test name', sortable: true },
+    { field: 'lastRun',  label: 'Last QC run', sortable: true },
+    { field: 'status',   label: 'Status', sortable: true, render: qcBadge },
+  ];
+
+  var QC_GRID_DATA = [
+    { testCode: '2342',      testName: 'hadar-lists parameters', lastRun: '04/18/2019 16:06', status: 'Warning',  sdi: '3.00', execDate: '04/18/2019', execTime: '16:05', lot: '16040236', controlMaterial: 'hadar_MM1' },
+    { testCode: '2006',      testName: 'APTT',                   lastRun: '',                 status: 'No rules', sdi: '–',    execDate: '–',           execTime: '–',     lot: '–',        controlMaterial: '–'         },
+    { testCode: '2009',      testName: 'APTTMIXING',             lastRun: '',                 status: 'No rules', sdi: '–',    execDate: '–',           execTime: '–',     lot: '–',        controlMaterial: '–'         },
+    { testCode: '156777',    testName: 'Bugs Bounds 15',         lastRun: '',                 status: 'No rules', sdi: '–',    execDate: '–',           execTime: '–',     lot: '–',        controlMaterial: '–'         },
+    { testCode: '1567777',   testName: 'Bugs Bounds extra',      lastRun: '',                 status: 'No rules', sdi: '–',    execDate: '–',           execTime: '–',     lot: '–',        controlMaterial: '–'         },
+    { testCode: '456456987', testName: 'Bugs Flag massage',      lastRun: '',                 status: 'No rules', sdi: '–',    execDate: '–',           execTime: '–',     lot: '–',        controlMaterial: '–'         },
+    { testCode: '4864845',   testName: 'Bugs order param',       lastRun: '',                 status: 'No rules', sdi: '–',    execDate: '–',           execTime: '–',     lot: '–',        controlMaterial: '–'         },
+    { testCode: '3301',      testName: 'PT',                     lastRun: '04/17/2019 09:12', status: 'Pass',     sdi: '1.20', execDate: '04/17/2019', execTime: '09:12', lot: '16040235', controlMaterial: 'hadar_MM1' },
+    { testCode: '3302',      testName: 'FIBRINOGEN',             lastRun: '04/17/2019 09:10', status: 'Pass',     sdi: '0.85', execDate: '04/17/2019', execTime: '09:10', lot: '16040235', controlMaterial: 'hadar_MM1' },
+    { testCode: '3303',      testName: 'D-DIMER',                lastRun: '',                 status: 'No rules', sdi: '–',    execDate: '–',           execTime: '–',     lot: '–',        controlMaterial: '–'         },
+  ];
+
+  function qcExpandHTML(row) {
+    var lbl  = 'font:400 13px/1.6 \'Open Sans\',sans-serif;color:#666;width:140px;flex-shrink:0';
+    var val  = 'font:400 13px/1.6 \'Open Sans\',sans-serif;color:#333';
+    var valB = 'font:600 13px/1.6 \'Open Sans\',sans-serif;color:#333';
+    var valP = 'font:600 13px/1.6 \'Open Sans\',sans-serif;color:#8B2FC9';
+    var hdr  = 'font:600 14px/1 \'Open Sans\',sans-serif;color:#333;margin-bottom:10px';
+    var r_   = 'display:flex';
+    return '<div style="display:flex;gap:60px">' +
+      '<div>' +
+        '<div style="' + hdr + '">Tests</div>' +
+        '<div style="' + r_ + '"><span style="' + lbl + '">SDI:</span><span style="' + valP + '">' + row.sdi + '</span></div>' +
+        '<div style="' + r_ + '"><span style="' + lbl + '">Execution date:</span><span style="' + val + '">' + row.execDate + '</span></div>' +
+        '<div style="' + r_ + '"><span style="' + lbl + '">Execution time:</span><span style="' + val + '">' + row.execTime + '</span></div>' +
+        '<div style="' + r_ + '"><span style="' + lbl + '">LOT:</span><span style="' + valB + '">' + row.lot + '</span></div>' +
+        '<div style="' + r_ + '"><span style="' + lbl + '">Control material:</span><span style="' + valB + '">' + row.controlMaterial + '</span></div>' +
+      '</div>' +
+      '<div>' +
+        '<div style="' + hdr + '">Levey Jennings</div>' +
+        '<div style="font:400 13px/1.4 \'Open Sans\',sans-serif;color:#888">Rules – not defined</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function commExpandHTML(row) {
+    var hdr  = 'font:600 14px/1 \'Open Sans\',sans-serif;color:#333;margin-bottom:12px';
+    var col  = 'font:400 13px/1 \'Open Sans\',sans-serif;color:#999;padding-bottom:6px';
+    var cell = 'font:400 13px/1 \'Open Sans\',sans-serif;color:#333';
+    var tpl  = 'display:grid;grid-template-columns:160px 120px 80px 1fr';
+    return '<div style="' + hdr + '">Tests</div>' +
+      '<div style="' + tpl + '">' +
+        '<span style="' + col + '">Test</span>' +
+        '<span style="' + col + '">Result</span>' +
+        '<span style="' + col + '">Run</span>' +
+        '<span style="' + col + '">Sample status in analyzer</span>' +
+      '</div>' +
+      '<div style="' + tpl + ';border-top:1px solid #e2e2e2;border-bottom:1px solid #e2e2e2;padding-top:8px;padding-bottom:8px">' +
+        '<span style="' + cell + '">' + row.test + '</span>' +
+        '<span style="' + cell + '">' + row.result + '</span>' +
+        '<span style="' + cell + '">' + row.run + '</span>' +
+        '<span style="' + cell + '">' + row.sampleStatus + '</span>' +
+      '</div>';
+  }
+
+  var COLUMNS = [
+    { field: 'analyzer',      label: 'Analyzer',           sortable: true, filterable: true },
+    { field: 'exe',           label: 'EXE file',           sortable: true, filterable: true },
+    { field: 'ip',            label: 'Terminal server IP', sortable: true, filterable: true },
+    { field: 'port',          label: 'Port',               sortable: true },
+    { field: 'communication', label: 'Communication',      sortable: true, render: commStatus },
+    { field: 'unmatched',     label: 'Unmatched results',  sortable: true,
+      render: function(v) { return v > 0 ? '<span style="font-weight:700;color:#D20000">' + v + '</span>' : String(v); } },
+    { field: 'lastComm',      label: 'Last communication', sortable: true },
+    { field: 'qc',            label: 'QC',                 sortable: true, render: qcBadge },
+    { field: 'department',    label: 'Department',         sortable: true, filterable: true },
+  ];
+
+  // ── Elements ──────────────────────────────────────────────────────────────
+  var grid              = document.getElementById('grid');
+  var masterList        = document.getElementById('master-list');
+  var viewToggleBtn     = document.getElementById('btn-view-toggle');
+  var acFilter          = document.getElementById('ac-filter');
+  var acNavbar          = document.getElementById('ac-navbar');
+  var detailPanel       = masterList.detailPanel;
+  var isSplitView       = false;
+  var gridSelIdx        = [];
+  var masterSelIdx      = [];
+  var activeFilterValue = 'dept-hema';
+
+  var FILTER_DEFS = {
+    'dept-hema':  { test: function(r) { return r.department === 'Hematology';   }, chips: [{ label: 'Department', value: 'Hematology',   key: 'department' }] },
+    'dept-chem':  { test: function(r) { return r.department === 'Chemistry';    }, chips: [{ label: 'Department', value: 'Chemistry',    key: 'department' }] },
+    'dept-coag':  { test: function(r) { return r.department === 'Coagulation';  }, chips: [{ label: 'Department', value: 'Coagulation',  key: 'department' }] },
+    'dept-micro': { test: function(r) { return r.department === 'Microbiology'; }, chips: [{ label: 'Department', value: 'Microbiology', key: 'department' }] },
+    'dept-immu':  { test: function(r) { return r.department === 'Immunology';   }, chips: [{ label: 'Department', value: 'Immunology',   key: 'department' }] },
+    'qc-fail':    { test: function(r) { return r.qc === 'Failed' || r.qc === 'Patient controls failed'; }, chips: [{ label: 'QC', value: 'Failed / Patient controls failed', key: 'qc' }] },
+    'unmatched':  { test: function(r) { return r.unmatched > 0; }, chips: [{ label: 'Unmatched results', value: '> 0', key: 'unmatched' }] },
+  };
+
+  function currentData() {
+    var rows = ALL_ROWS;
+    if (activeFilterValue && FILTER_DEFS[activeFilterValue]) {
+      rows = rows.filter(FILTER_DEFS[activeFilterValue].test);
+    }
+    var q = searchText.toLowerCase();
+    if (!q) return rows;
+    return rows.filter(function(r) {
+      return r.analyzer.toLowerCase().includes(q) ||
+             r.department.toLowerCase().includes(q) ||
+             r.ip.includes(q) ||
+             r.exe.toLowerCase().includes(q);
+    });
+  }
+
+  function applyFilters() {
+    grid.setData(COLUMNS, currentData());
+  }
+
+  applyFilters();
+  document.fonts.ready.then(function() { applyFilters(); });
+
+  // ── Search autocomplete ────────────────────────────────────────────────────
+  var mainSearch = document.getElementById('main-search');
+
+  mainSearch.setOptions(ALL_ROWS.map(function(r) {
+    return { label: r.analyzer, row2: r.department, value: r.analyzer };
+  }));
+
+  mainSearch.addEventListener('labos-input', function(e) {
+    searchText = (e.detail && e.detail.value) || '';
+    applyFilters();
+    if (isSplitView) syncMasterList();
+  });
+
+  mainSearch.addEventListener('labos-select', function(e) {
+    searchText = e.detail.label || '';
+    applyFilters();
+    if (isSplitView) syncMasterList();
+  });
+
+  // ── View toggle ───────────────────────────────────────────────────────────
+  function syncMasterList(selectedIndices) {
+    var rows = currentData();
+    var selSet = new Set(selectedIndices || []);
+    masterList.setData(rows.map(function(r, i) {
+      return {
+        row1:     r.analyzer,
+        row2:     r.department,
+        row3:     r.lastComm,
+        selected: selSet.has(i),
+      };
+    }));
+  }
+
+  function updateDetailPanel() {
+    var rows = currentData();
+    if (!masterSelIdx.length) {
+      detailPanel.innerHTML = '<p class="detail-empty">Select an analyzer to view details</p>';
+      return;
+    }
+    var r = rows[masterSelIdx[0]];
+    if (!r) { detailPanel.innerHTML = '<p class="detail-empty">Select an analyzer to view details</p>'; return; }
+    detailPanel.style.overflowY       = 'hidden';
+    detailPanel.style.display         = 'flex';
+    detailPanel.style.flexDirection   = 'column';
+    var S = {
+      bar:   'display:flex;align-items:center;height:40px;background:#fff;overflow:hidden',
+      wrap:  'padding:12px 16px 0',
+      sep:   'flex-shrink:0;width:1px;align-self:stretch;background:#dddddd;margin:0 10px',
+      cell:  'display:flex;flex-direction:column;height:40px;flex-shrink:0',
+      val:   'padding-top:8px;font:400 14px/14px \'Open Sans\',sans-serif;color:#333;white-space:nowrap;letter-spacing:.1px',
+      lbl:   'margin-top:5px;font:600 11px/11px \'Open Sans\',sans-serif;color:#999;white-space:nowrap;letter-spacing:.1px',
+      id:    'display:flex;align-items:center;flex-shrink:0',
+      body:  'display:flex;flex-direction:column;height:40px;padding-top:4px;padding-bottom:2px;justify-content:space-between',
+      row1:  'display:flex;align-items:flex-end;gap:4px',
+      name:  'font:600 20px/1 \'Open Sans\',sans-serif;color:#333;letter-spacing:.1px;white-space:nowrap',
+      sub:   'font:600 11px/1 \'Open Sans\',sans-serif;color:#999;letter-spacing:.1px;white-space:nowrap',
+    };
+    function isCell(val, lbl) {
+      return '<div style="' + S.cell + '"><div style="' + S.val + '">' + val + '</div><div style="' + S.lbl + '">' + lbl + '</div></div>';
+    }
+    var commColor = COMM_COLOR[r.communication] || '#999999';
+    var commCircle = '<span class="comm-circle" data-tip="' + r.communication + '" style="font-family:\'Material Icons\';font-size:16px;color:' + commColor + ';line-height:1;flex-shrink:0;align-self:center;cursor:default">circle</span>';
+    var page  = masterSelIdx[0] + 1;
+    var total = rows.length;
+    detailPanel.innerHTML =
+      '<div style="' + S.wrap + '">' +
+        '<div style="display:flex;align-items:center;gap:12px">' +
+          '<div style="' + S.bar + ';flex:1;min-width:0">' +
+            '<div style="' + S.id + '"><div style="' + S.body + '">' +
+              '<div style="' + S.row1 + '">' + commCircle + '<span style="' + S.name + '">' + r.analyzer + '</span>' + qcChip(r.qc) + '</div>' +
+              '<div style="' + S.sub + '">Analyzer</div>' +
+            '</div></div>' +
+            '<div style="' + S.sep + '"></div>' + isCell(r.department, 'Department') +
+            '<div style="' + S.sep + '"></div>' + isCell(r.ip, 'Terminal') +
+            '<div style="' + S.sep + '"></div>' + isCell(r.port, 'Port') +
+            '<div style="' + S.sep + '"></div>' + isCell(r.exe, 'EXE') +
+            '<div style="' + S.sep + '"></div>' + isCell(r.lastComm, 'Last communication') +
+          '</div>' +
+          '<labos-arrows-navigation class="detail-nav" page="' + page + '" total="' + total + '" style="flex-shrink:0"></labos-arrows-navigation>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;padding:12px 16px;flex-wrap:wrap">' +
+        '<labos-button variant="default" icon="play_arrow">Run</labos-button>' +
+        '<labos-button variant="default" icon="stop">Stop</labos-button>' +
+      '</div>' +
+      '<labos-tabs class="detail-tabs" style="padding:0 16px"></labos-tabs>' +
+      '<labos-tab-panel class="detail-tab-panel" style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column"></labos-tab-panel>';
+    var circleEl = detailPanel.querySelector('.comm-circle');
+    if (circleEl) {
+      circleEl.addEventListener('mouseover', function() {
+        var tip = _getGridTip();
+        tip.textContent = circleEl.dataset.tip;
+        tip.style.display = 'block';
+        var rect = circleEl.getBoundingClientRect();
+        var x = rect.left + rect.width / 2 - tip.offsetWidth / 2;
+        var y = rect.top - tip.offsetHeight - 6;
+        tip.style.left = Math.max(4, Math.min(window.innerWidth - tip.offsetWidth - 4, x)) + 'px';
+        tip.style.top  = Math.max(4, y) + 'px';
+      });
+      circleEl.addEventListener('mouseleave', function() { _getGridTip().style.display = 'none'; });
+    }
+    var detailTabs  = detailPanel.querySelector('.detail-tabs');
+    var detailPanel2 = detailPanel.querySelector('.detail-tab-panel');
+    function showTabContent(value) {
+      if (!detailPanel2) return;
+      if (value === 'communication') {
+        detailPanel2.innerHTML = '<labos-grid class="comm-grid" title="Recent communication" mode="simple" row-expand height="fill" style="margin:0 16px"></labos-grid>';
+        var cg = detailPanel2.querySelector('.comm-grid');
+        if (cg) {
+          cg.setData(COMM_GRID_COLUMNS, COMM_GRID_DATA);
+          cg.addEventListener('labos-row-expand', function(e) {
+            e.detail.panel.innerHTML = commExpandHTML(e.detail.row);
+          });
+        }
+      } else if (value === 'qc') {
+        detailPanel2.innerHTML = '<labos-grid class="qc-grid" title="QC Tests" mode="simple" row-expand height="fill" style="margin:0 16px"></labos-grid>';
+        var qg = detailPanel2.querySelector('.qc-grid');
+        if (qg) {
+          qg.setData(QC_GRID_COLUMNS, QC_GRID_DATA);
+          qg.addEventListener('labos-row-expand', function(e) {
+            e.detail.panel.innerHTML = qcExpandHTML(e.detail.row);
+          });
+        }
+      } else {
+        detailPanel2.innerHTML = '<div style="padding:20px 16px;font:400 13px/1 \'Open Sans\',sans-serif;color:#999">No items found</div>';
+      }
+    }
+    if (detailTabs) {
+      detailTabs.setTabs([
+        { label: 'Communication', value: 'communication', selected: true },
+        { label: 'QC',            value: 'qc' },
+        { label: 'Unmatched',     value: 'unmatched' },
+      ]);
+      detailTabs.addEventListener('labos-change', function(e) { showTabContent(e.detail.value); });
+    }
+    showTabContent('communication');
+    var navEl = detailPanel.querySelector('.detail-nav');
+    if (navEl) {
+      navEl.addEventListener('labos-change', function(e) {
+        var newIdx = e.detail.page - 1;
+        var dataLen = currentData().length;
+        if (newIdx < 0 || newIdx >= dataLen) return;
+        masterSelIdx = [newIdx];
+        masterList.setFocus(newIdx);
+        syncMasterList(masterSelIdx);
+        updateDetailPanel();
+      });
+    }
+  }
+
+  viewToggleBtn.addEventListener('click', function() {
+    isSplitView = !isSplitView;
+    if (isSplitView) {
+      viewToggleBtn.setAttribute('icon', 'view_headline');
+      grid.style.display       = 'none';
+      masterList.style.display = 'flex';
+      var selIdx = gridSelIdx.length > 0 ? gridSelIdx : [0];
+      syncMasterList(selIdx);
+      masterList.setFocus(selIdx[0]);
+      masterSelIdx = selIdx.slice();
+      updateDetailPanel();
+    } else {
+      viewToggleBtn.setAttribute('icon', 'vertical_split');
+      masterList.style.display = 'none';
+      grid.style.display       = '';
+      applyFilters();
+      if (masterSelIdx.length) grid.setSelection(masterSelIdx);
+      gridSelIdx = masterSelIdx.slice();
+    }
+  });
+
+  masterList.addEventListener('labos-selection-change', function(e) {
+    masterSelIdx = (e.detail.indices ? Array.from(e.detail.indices) : []).sort(function(a, b) { return a - b; });
+    updateDetailPanel();
+  });
+
+  grid.addEventListener('labos-selection-change', function(e) {
+    gridSelIdx = (e.detail.indices ? Array.from(e.detail.indices) : []).sort(function(a, b) { return a - b; });
+  });
+
+  // ── Filter ────────────────────────────────────────────────────────────────
+  acFilter.setFilters([
+    { name: 'Hematology',   count: 3,  value: 'dept-hema'  },
+    { name: 'Chemistry',    count: 2,  value: 'dept-chem'  },
+    { name: 'Coagulation',  count: 2,  value: 'dept-coag'  },
+    { name: 'Microbiology', count: 2,  value: 'dept-micro' },
+    { name: 'Immunology',   count: 1,  value: 'dept-immu'  },
+    { name: 'QC Failed',    count: 2,  value: 'qc-fail'    },
+    { name: 'Unmatched',    count: 4,  value: 'unmatched'  },
+  ]);
+
+  acFilter.setActiveFilter({
+    name: 'Hematology',
+    chips: FILTER_DEFS['dept-hema'].chips,
+  });
+
+  function clearActiveFilter() {
+    activeFilterValue = null;
+    acFilter.clearActiveFilter();
+    applyFilters();
+    if (isSplitView) syncMasterList();
+  }
+
+  document.getElementById('btn-filter').addEventListener('click', function() {
+    if (acNavbar) acFilter.setAttribute('top-offset', Math.round(acNavbar.getBoundingClientRect().bottom));
+    acFilter.toggle();
+  });
+
+  acFilter.addEventListener('labos-filter-select', function(e) {
+    activeFilterValue = e.detail.value;
+    var def = FILTER_DEFS[activeFilterValue];
+    if (def) acFilter.setActiveFilter({ name: e.detail.name, chips: def.chips });
+    applyFilters();
+    if (isSplitView) syncMasterList();
+  });
+
+  acFilter.addEventListener('labos-filter-chip-remove', function() {
+    clearActiveFilter();
+  });
+
+  acFilter.addEventListener('labos-filter-action', function(e) {
+    if (e.detail.action === 'clear') clearActiveFilter();
+  });
+
+  acFilter.addEventListener('labos-filter-search', function(e) {
+    // gallery search is handled internally by the component
+  });
+
+  // ── Action buttons ────────────────────────────────────────────────────────
+  document.getElementById('btn-run').addEventListener('click', function() {
+    LabosToast.show('Analyzer started.', 'success');
+  });
+
+  document.getElementById('btn-stop').addEventListener('click', function() {
+    LabosToast.show('Analyzer stopped.', 'info');
+  });
+
+  document.getElementById('btn-log').setItems([
+    { label: 'Error log', value: 'error-log' },
+    { label: 'Download',  value: 'download'  },
+  ]);
+  document.getElementById('btn-log').addEventListener('labos-action', function() {
+    LabosToast.show('Log opened.', 'info');
+  });
+  document.getElementById('btn-log').addEventListener('labos-select', function(e) {
+    if (e.detail.value === 'error-log') LabosToast.show('Error log opened.', 'info');
+    if (e.detail.value === 'download')  LabosToast.show('Log downloaded.', 'success');
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,528 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test mapping — LabOS</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<script src="../shared/labos-components.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+    background: #ffffff;
+    color: #333;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  :root {
+    --primary:      #265F68;
+    --primary-dark: #1F5156;
+    --primary-20:   #D5E0E1;
+    --warn:         #D20000;
+    --surface:      #F5F5F5;
+    --white:        #ffffff;
+  }
+
+  labos-navbar { flex-shrink: 0; }
+
+  .screen-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+
+  .screen-top { padding: 16px 16px 0; flex-shrink: 0; }
+
+  .search-zone { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+  .action-bar {
+    display: flex; align-items: center; gap: 8px;
+    height: 36px; margin-top: 16px; flex-shrink: 0;
+  }
+
+  labos-grid { margin: 0 16px; }
+
+  /* ── Splash screen ── */
+  #splash {
+    position: fixed; inset: 0; background: #fff;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 9999; transition: opacity 0.6s ease;
+    --draw-speed: 0.75;
+  }
+  #splash.fade-out { opacity: 0; pointer-events: none; }
+  #splash svg { width: 300px; }
+  #splash .greeting {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 18px; font-weight: 300; color: #333;
+    margin-top: 28px; opacity: 0;
+    animation: splashGreeting 0.8s ease 0.7s both;
+  }
+  @keyframes splashGreeting {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Add dialog form ── */
+  .mapping-form { display: flex; gap: 32px; }
+  .mapping-col  { flex: 1; display: flex; flex-direction: column; }
+  .mapping-inline { display: flex; gap: 12px; align-items: flex-start; }
+</style>
+</head>
+<body>
+
+<!-- ══ Splash ══════════════════════════════════════════════════════════════ -->
+<div id="splash"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 716.95 164.92">
+  <defs><style>
+    .cls-1,.cls-2{stroke:#333}.cls-1,.cls-2,.cls-3{fill:none;stroke-linecap:round;stroke-width:17px}.cls-1,.cls-3{stroke-linejoin:round}.cls-2{stroke-miterlimit:10}.cls-3{stroke:#00b08a}
+    .draw{stroke-dasharray:1;stroke-dashoffset:1}.draw-rev{stroke-dasharray:1;stroke-dashoffset:-1}
+    @keyframes draw{to{stroke-dashoffset:0}}
+    @keyframes breathe{0%,100%{stroke-opacity:1}50%{stroke-opacity:.72}}
+    .el-cloud{animation:draw calc(.85s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.05s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-divider{animation:draw calc(.3s * var(--draw-speed,1)) ease-out calc(.55s * var(--draw-speed,1)) both}
+    .el-note-r{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-note-l{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-circle{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.1s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-s{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.6s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+  </style></defs>
+  <g>
+    <path pathLength="1" class="cls-3 draw-rev el-cloud" d="M195.39,156.4H49.82s-41.32,1.93-41.32-38.95c0-37.37,38.71-40.71,38.71-40.71,0,0,.91-22.5,19.57-32.15,19.12-9.89,34.43.18,34.43.18,0,0,5.03-24.98,37.85-34.19,31.93-8.97,56.33,14.04,56.33,14.04"/>
+    <line pathLength="1" class="cls-1 draw el-divider" x1="222.66" y1="8.5" x2="222.66" y2="156.42"/>
+    <path pathLength="1" class="cls-2 draw el-note-r" d="M394.68,70.21c5.37-2.28,11.28-3.53,17.48-3.53,24.78,0,44.87,20.09,44.87,44.87s-20.09,44.87-44.87,44.87-44.87-20.09-44.87-44.87V9.06"/>
+    <path pathLength="1" class="cls-2 draw el-note-l" d="M312.94,152.26c-5.37,2.28-11.28,3.53-17.48,3.53-24.78,0-44.87-20.09-44.87-44.87,0-24.78,20.09-44.87,44.87-44.87s44.87,20.09,44.87,44.87c0,6.2,0,45.49,0,45.49"/>
+    <circle pathLength="1" class="cls-3 draw el-circle" cx="546.26" cy="92.48" r="63.94"/>
+    <path pathLength="1" class="cls-3 draw el-s" d="M636.41,136.15s7.35,20.27,36.3,20.27c28.96,0,35.74-23.88,35.74-30.88,0-11.32-2.39-25.63-36.02-33.02-33.63-7.4-36.02-22.98-36.02-33.02,0-7,6.78-30.88,35.74-30.88s36.3,20.27,36.3,20.27"/>
+  </g>
+</svg>
+<p id="splash-greeting" class="greeting"></p>
+</div>
+
+<!-- ══ Navbar ═══════════════════════════════════════════════════════════════ -->
+<labos-navbar
+  breadcrumbs='[{"label":"Workbenches & devices","route":"workbenches-devices.html"},{"label":"Test mapping"}]'
+  user-name="Angela Doe"
+  lab-name="LabOS laboratory">
+</labos-navbar>
+
+<!-- ══ Screen body ══════════════════════════════════════════════════════════ -->
+<div class="screen-body">
+  <div class="screen-top">
+
+    <!-- Search + add -->
+    <div class="search-zone">
+      <labos-rounded-search id="main-search" placeholder="Search for test" style="width:300px"></labos-rounded-search>
+      <labos-button id="btn-add" shape="rounded" icon="add" title="Add test mapping"></labos-button>
+    </div>
+
+    <!-- Action bar -->
+    <div class="action-bar">
+      <labos-button id="btn-action-add"    icon="add">Add</labos-button>
+      <labos-button id="btn-action-edit"   icon="edit">Edit</labos-button>
+      <labos-button id="btn-action-import" icon="download">Import</labos-button>
+      <labos-button-menu id="btn-default-menu" icon="task_alt" label="Default" type="submenu"></labos-button-menu>
+      <labos-button id="btn-action-delete" icon="delete">Delete</labos-button>
+      <labos-button id="btn-unused" borderless icon="block" style="margin-left:auto">Unused mappings</labos-button>
+    </div>
+
+  </div>
+
+  <!-- Grid -->
+  <labos-grid id="grid" title="Test-workbench mapping"></labos-grid>
+</div>
+
+<!-- ══ Add test mapping dialog ══════════════════════════════════════════════ -->
+<labos-dialog id="dialog-add-mapping" size="large" title="Add test mapping">
+  <div class="mapping-form">
+
+    <!-- Left column -->
+    <div class="mapping-col">
+      <labos-autocomplete id="dm-workbench"  placeholder="Workbench" mandatory></labos-autocomplete>
+      <div class="mapping-inline" style="margin-top:4px;">
+        <labos-checkbox id="dm-default-wb"   label="Default workbench"></labos-checkbox>
+        <labos-checkbox id="dm-default-stat" label="Default for stat tests"></labos-checkbox>
+      </div>
+      <labos-autocomplete id="dm-test"       placeholder="Test" mandatory></labos-autocomplete>
+      <labos-input  id="dm-channel"          placeholder="Channel"       hint="Generated automatically if empty"></labos-input>
+      <labos-input  id="dm-alias"            placeholder="Alias"></labos-input>
+      <labos-input  id="dm-req-alias"        placeholder="Request alias" hint="In case the Alias name is different than result Alias name"></labos-input>
+      <div class="mapping-inline">
+        <labos-input id="dm-returning" placeholder="Returning test" style="flex:1"></labos-input>
+        <labos-input id="dm-priority"  placeholder="Priority"       style="flex:1"></labos-input>
+      </div>
+      <div class="mapping-inline">
+        <labos-input id="dm-low"  placeholder="Low"  hint="Technical range" style="flex:1"></labos-input>
+        <labos-input id="dm-high" placeholder="High" hint="Technical range" style="flex:1"></labos-input>
+      </div>
+    </div>
+
+    <!-- Right column -->
+    <div class="mapping-col">
+      <labos-input id="dm-wb-priority" placeholder="Workbench priority" hint="Workbench priority when rerouting a test"></labos-input>
+      <labos-text-header type="h5" style="margin-top:12px">Quality control</labos-text-header>
+      <labos-checkbox id="dm-qc-reset" label='Enable approval if status is "Reset"'></labos-checkbox>
+      <labos-checkbox id="dm-qc-auto"  label="Automatic QC approval"></labos-checkbox>
+      <labos-checkbox id="dm-qc-pass"  label="Reset QC after pass"></labos-checkbox>
+      <labos-input id="dm-hours-qc"   placeholder="Hours to QC status"></labos-input>
+      <labos-input id="dm-qc-formula" placeholder="QC status formula"></labos-input>
+    </div>
+
+  </div>
+
+  <labos-button slot="footer" cancel icon="close">Cancel</labos-button>
+  <labos-button slot="footer" id="dm-btn-add" variant="accent" icon="check">Add</labos-button>
+</labos-dialog>
+
+<!-- ══ Import dialog ════════════════════════════════════════════════════════ -->
+<labos-dialog id="dialog-import" title="Import" size="medium">
+  <labos-banner-alert type="info" message="Import action copies test mappings from one workbench to another."></labos-banner-alert>
+  <labos-autocomplete id="import-source" placeholder="Original workbench" mandatory style="margin-top:16px"></labos-autocomplete>
+  <labos-autocomplete id="import-target" placeholder="Target workbench" mandatory></labos-autocomplete>
+  <labos-button slot="footer" cancel icon="close">Cancel</labos-button>
+  <labos-button slot="footer" id="import-btn-ok" variant="accent" icon="check">Ok</labos-button>
+</labos-dialog>
+
+<!-- ══ Delete confirm dialog ════════════════════════════════════════════════ -->
+<labos-dialog id="dialog-delete" title="Delete mapping" type="confirm">
+  <p>Are you sure you want to delete this mapping?</p>
+  <labos-button slot="footer" cancel icon="close">Cancel</labos-button>
+  <labos-button slot="footer" variant="warn" icon="delete" id="btn-confirm-delete">Delete mapping</labos-button>
+</labos-dialog>
+
+<!-- ══ Mapping mismatch dialog ══════════════════════════════════════════════ -->
+<labos-dialog id="dialog-mismatch" title="Mapping mismatch" size="xl">
+  <labos-banner-alert type="info" message="Mappings for the following tests already exist on the target workbench. Select the mappings you would like to update based on the original workbench. Otherwise, the mappings defined in the target workbench will remain unchanged."></labos-banner-alert>
+  <labos-grid id="grid-mismatch" style="flex:1;min-height:0;margin-top:12px"></labos-grid>
+  <labos-button slot="footer" icon="skip_next" id="btn-mismatch-skip">Skip</labos-button>
+  <labos-button slot="footer" variant="accent" icon="check" id="btn-mismatch-ok">Ok</labos-button>
+</labos-dialog>
+
+<!-- ══ No-selection dialog ══════════════════════════════════════════════════ -->
+<labos-dialog id="dialog-no-selection" type="warning" title="Selection required">
+  <p style="font-size:14px;color:#333">Please select at least one item</p>
+  <labos-button slot="footer" variant="default" icon="check" onclick="document.getElementById('dialog-no-selection').hide()">OK</labos-button>
+</labos-dialog>
+
+<!-- ══ Splash JS ════════════════════════════════════════════════════════════ -->
+<script>
+  (function() {
+    var s = document.getElementById('splash');
+    var isReload = (performance.getEntriesByType('navigation')[0] || {}).type === 'reload';
+    var fromNav  = sessionStorage.getItem('labos_nav') === '1';
+    sessionStorage.removeItem('labos_nav');
+    if (!isReload && fromNav) { s.remove(); return; }
+    var h = new Date().getHours();
+    var g = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+    var parts = (document.querySelector('labos-navbar')?.getAttribute('user-name') || '').trim().split(/\s+/);
+    var first = /^(Dr\.|Prof\.|Mr\.|Mrs\.|Ms\.)$/i.test(parts[0]) ? (parts[1] || '') : (parts[0] || '');
+    document.getElementById('splash-greeting').textContent = first ? g + ', ' + first : g;
+    setTimeout(function() {
+      s.classList.add('fade-out');
+      s.addEventListener('transitionend', function() { s.remove(); }, { once: true });
+    }, 3000);
+  })();
+</script>
+
+<script>
+  document.addEventListener('click', function(e) {
+    var path = e.composedPath ? e.composedPath() : [];
+    var a = path.find(function(el) { return el.tagName === 'A' && el.href && !el.target; });
+    if (a && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+      sessionStorage.setItem('labos_nav', '1');
+    }
+  }, true);
+</script>
+
+<script>
+  // ── Data ────────────────────────────────────────────────────────────────
+  const WORKBENCHES = [
+    { code: '701',  name: 'ACL1',      group: 'ACL'     },
+    { code: '723',  name: 'ACL2',      group: 'ACL'     },
+    { code: '1209', name: 'ACL3',      group: 'ACL'     },
+    { code: '1987', name: 'IMAX1',     group: 'IMAX'    },
+    { code: '2039', name: 'BARCODE_A', group: 'BARCODE' },
+    { code: '2342', name: 'LX1',       group: 'LX'      },
+  ];
+
+  const TEST_OPTIONS = [
+    { label: 'A1',            value: 'a1'    },
+    { label: 'APTT',          value: 'aptt'  },
+    { label: 'APTTMIXING',    value: 'apttm' },
+    { label: 'BASOS',         value: 'basos' },
+    { label: 'INR',           value: 'inr'   },
+    { label: 'PROTIME',       value: 'pro'   },
+    { label: 'flagtest',      value: 'flag'  },
+    { label: 'print test',    value: 'print' },
+    { label: 'DaliaTNoManda', value: 'dalia' },
+  ];
+
+  let ALL_ROWS = [
+    { code: '701',  testName: 'A1',            wbName: 'ACL1', wbCode: '701',  group: 'ACL', channel: '', alias: '',       site: 'Netlims NJ Laboratory', default: true,  stat: false },
+    { code: '723',  testName: 'flagtest',       wbName: 'ACL1', wbCode: '701',  group: 'ACL', channel: '', alias: '',       site: 'Netlims NJ Laboratory', default: true,  stat: false },
+    { code: '1209', testName: 'DaliaTNoManda',  wbName: 'ACL1', wbCode: '701',  group: 'ACL', channel: '', alias: '',       site: 'Netlims NJ Laboratory', default: true,  stat: false },
+    { code: '1987', testName: 'print test',     wbName: 'ACL2', wbCode: '723',  group: 'ACL', channel: '', alias: '',       site: 'Netlims NJ Laboratory', default: true,  stat: false },
+    { code: '2006', testName: 'APTT',           wbName: 'ACL2', wbCode: '723',  group: 'ACL', channel: '', alias: '103sec', site: 'Netlims NJ Laboratory', default: true,  stat: false },
+    { code: '2009', testName: 'APTTMIXING',     wbName: 'ACL2', wbCode: '723',  group: 'ACL', channel: '', alias: '',       site: 'Netlims NJ Laboratory', default: true,  stat: true  },
+    { code: '2039', testName: 'BASOS',          wbName: 'LX1',  wbCode: '2342', group: 'LX',  channel: '', alias: '',       site: 'Netlims NJ Laboratory', default: true,  stat: true  },
+    { code: '2102', testName: 'INR',            wbName: 'LX2',  wbCode: '2342', group: 'LX',  channel: '', alias: '204INR', site: 'Netlims NJ Laboratory', default: true,  stat: true  },
+    { code: '2204', testName: 'PROTIME',        wbName: 'LX2',  wbCode: '2342', group: 'LX',  channel: '', alias: '204sec', site: 'Netlims NJ Laboratory', default: true,  stat: true  },
+  ];
+  let nextCode = Math.max(...ALL_ROWS.map(r => parseInt(r.code))) + 1;
+  let searchText = '';
+
+  const COLUMNS = [
+    { field: 'code',     label: 'Code',            sortable: true, filterable: true },
+    { field: 'testName', label: 'Test name',        sortable: true, filterable: true },
+    { field: 'wbName',   label: 'Workbench',        sortable: true, filterable: true,
+      render: (val, row) => `<a href="workbench-details.html?code=${encodeURIComponent(row.wbCode)}" onclick="sessionStorage.setItem('labos_nav','1')" style="color:#265F68;font-weight:600;text-decoration:none;">${val}</a>` },
+    { field: 'group',    label: 'Group',            sortable: true, filterable: true },
+    { field: 'channel',  label: 'Channel',          sortable: true, filterable: true },
+    { field: 'alias',    label: 'Alias',            sortable: true, filterable: true },
+    { field: 'default',      label: 'Default',       icon: 'done', type: 'icon-only', filterable: true },
+    { field: 'stat',         label: 'Stat',          icon: 'done', type: 'icon-only', filterable: true },
+    { field: 'site',     label: 'Performing site',  sortable: true, filterable: true },
+    { field: 'requestAlias', label: 'Request Alias', sortable: true, filterable: true, hidden: true },
+    { field: 'returnName',   label: 'Return Name',   sortable: true, filterable: true, hidden: true },
+    { field: 'low',          label: 'Low',           sortable: true, filterable: true, hidden: true },
+    { field: 'high',         label: 'High',          sortable: true, filterable: true, hidden: true },
+    { field: 'priority',     label: 'Priority',      sortable: true, filterable: true, hidden: true },
+  ];
+
+  // ── Grid ─────────────────────────────────────────────────────────────────
+  const grid = document.getElementById('grid');
+
+  function applyFilters() {
+    const q = searchText.toLowerCase();
+    const rows = q ? ALL_ROWS.filter(r =>
+      r.testName.toLowerCase().includes(q) ||
+      r.code.includes(q) ||
+      r.wbName.toLowerCase().includes(q) ||
+      r.group.toLowerCase().includes(q)
+    ) : ALL_ROWS;
+    grid.setData(COLUMNS, rows);
+  }
+
+  applyFilters();
+
+  // ── Search ───────────────────────────────────────────────────────────────
+  const search = document.getElementById('main-search');
+  search.addEventListener('labos-input', e => {
+    searchText = e.detail?.value || '';
+    applyFilters();
+  });
+
+  // ── Action guard ─────────────────────────────────────────────────────────
+  function requireSelection(fn) {
+    if (!grid.selectedRows.length) {
+      document.getElementById('dialog-no-selection').show();
+    } else {
+      fn();
+    }
+  }
+
+  // ── Add / Edit dialog ─────────────────────────────────────────────────────
+  const dlg = document.getElementById('dialog-add-mapping');
+  let editingCode = null;
+  let _wbCode = '', _wbName = '', _testName = '';
+
+  document.getElementById('dm-workbench').setOptions(WORKBENCHES.map(w => ({ label: w.name, value: w.code })));
+  document.getElementById('dm-test').setOptions(TEST_OPTIONS);
+
+  document.getElementById('dm-workbench').addEventListener('labos-change', e => {
+    _wbCode = e.detail.value; _wbName = e.detail.label;
+  });
+  document.getElementById('dm-test').addEventListener('labos-change', e => {
+    _testName = e.detail.label;
+  });
+
+  function clearDialog() {
+    _wbCode = ''; _wbName = ''; _testName = '';
+    ['dm-workbench','dm-test','dm-channel','dm-alias','dm-req-alias','dm-returning','dm-priority','dm-low','dm-high','dm-wb-priority','dm-hours-qc','dm-qc-formula'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    ['dm-default-wb','dm-default-stat','dm-qc-reset','dm-qc-auto','dm-qc-pass'].forEach(id => {
+      document.getElementById(id)?.removeAttribute('checked');
+    });
+    ['dm-workbench','dm-test'].forEach(id => {
+      document.getElementById(id)?.removeAttribute('invalid');
+    });
+  }
+
+  function openAddDialog() {
+    editingCode = null;
+    clearDialog();
+    dlg.setAttribute('title', 'Add test mapping');
+    document.getElementById('dm-btn-add').textContent = 'Add';
+    dlg.show();
+  }
+
+  function openEditDialog() {
+    requireSelection(() => {
+      const row = grid.selectedRows[0];
+      editingCode = row.code;
+      clearDialog();
+      _wbCode = row.wbCode; _wbName = row.wbName; _testName = row.testName;
+      document.getElementById('dm-workbench').value = row.wbName;
+      document.getElementById('dm-test').value      = row.testName;
+      document.getElementById('dm-channel').value   = row.channel || '';
+      document.getElementById('dm-alias').value     = row.alias   || '';
+      if (row.default) document.getElementById('dm-default-wb').setAttribute('checked', '');
+      if (row.stat)    document.getElementById('dm-default-stat').setAttribute('checked', '');
+      dlg.setAttribute('title', 'Edit test mapping');
+      document.getElementById('dm-btn-add').textContent = 'Save';
+      dlg.show();
+    });
+  }
+
+  document.getElementById('btn-add').addEventListener('click',         openAddDialog);
+  document.getElementById('btn-action-add').addEventListener('click',  openAddDialog);
+  document.getElementById('btn-action-edit').addEventListener('click', openEditDialog);
+
+  document.getElementById('dm-btn-add').addEventListener('click', () => {
+    const wb   = _wbCode || document.getElementById('dm-workbench').value;
+    const test = _testName || document.getElementById('dm-test').value;
+    if (!wb || !test) return;
+
+    const wb_obj  = WORKBENCHES.find(w => w.code === wb || w.name === wb);
+    const newData = {
+      testName: test,
+      wbCode:   wb_obj?.code  || wb,
+      wbName:   wb_obj?.name  || _wbName || wb,
+      group:    wb_obj?.group || '',
+      channel:  document.getElementById('dm-channel').value,
+      alias:    document.getElementById('dm-alias').value,
+      site:     'Netlims NJ Laboratory',
+      default:  document.getElementById('dm-default-wb').hasAttribute('checked'),
+      stat:     document.getElementById('dm-default-stat').hasAttribute('checked'),
+    };
+
+    if (editingCode) {
+      const idx = ALL_ROWS.findIndex(r => r.code === editingCode);
+      if (idx !== -1) ALL_ROWS[idx] = { ...ALL_ROWS[idx], ...newData };
+      LabosToast.show('Test mapping updated.', 'success');
+    } else {
+      ALL_ROWS.push({ code: String(nextCode++), ...newData });
+      LabosToast.show('Test mapping added.', 'success');
+    }
+    applyFilters();
+    dlg.hide();
+  });
+
+  // ── Delete ───────────────────────────────────────────────────────────────
+  document.getElementById('btn-action-delete').addEventListener('click', () =>
+    requireSelection(() => document.getElementById('dialog-delete').show()));
+
+  document.getElementById('btn-confirm-delete').addEventListener('click', () => {
+    const codes = new Set(grid.selectedRows.map(r => r.code));
+    ALL_ROWS = ALL_ROWS.filter(r => !codes.has(r.code));
+    applyFilters();
+    document.getElementById('dialog-delete').hide();
+    LabosToast.show('Mapping(s) deleted.', 'success');
+  });
+
+  // ── Import dialog ─────────────────────────────────────────────────────────
+  const dlgImport = document.getElementById('dialog-import');
+  document.getElementById('import-source').setOptions(WORKBENCHES.map(w => ({ label: w.name, value: w.code })));
+  document.getElementById('import-target').setOptions(WORKBENCHES.map(w => ({ label: w.name, value: w.code })));
+
+  let _importSource = '', _importTarget = '';
+  document.getElementById('import-source').addEventListener('labos-change', e => { _importSource = e.detail.value; });
+  document.getElementById('import-target').addEventListener('labos-change', e => { _importTarget = e.detail.value; });
+
+  document.getElementById('btn-action-import').addEventListener('click', () => {
+    _importSource = ''; _importTarget = '';
+    document.getElementById('import-source').value = '';
+    document.getElementById('import-target').value = '';
+    dlgImport.show();
+  });
+
+  document.getElementById('import-btn-ok').addEventListener('click', () => {
+    const srcWb = WORKBENCHES.find(w => w.code === _importSource);
+    const tgtWb = WORKBENCHES.find(w => w.code === _importTarget);
+    if (!srcWb || !tgtWb) { dlgImport.hide(); return; }
+
+    const srcRows    = ALL_ROWS.filter(r => r.wbCode === _importSource);
+    const tgtRows    = ALL_ROWS.filter(r => r.wbCode === _importTarget);
+    const tgtByTest  = new Map(tgtRows.map(r => [r.testName, r]));
+
+    const conflicts    = srcRows.filter(r =>  tgtByTest.has(r.testName));
+    const nonConflicts = srcRows.filter(r => !tgtByTest.has(r.testName));
+
+    nonConflicts.forEach(r => {
+      ALL_ROWS.push({ ...r, code: String(nextCode++), wbCode: tgtWb.code, wbName: tgtWb.name, group: tgtWb.group });
+    });
+
+    dlgImport.hide();
+
+    if (conflicts.length) {
+      const mismatchCols = [
+        { field: 'testName',   label: 'Test name',                             sortable: true },
+        { field: 'srcChannel', label: `${srcWb.name} channel (Original)` },
+        { field: 'srcAlias',   label: `${srcWb.name} alias (Original)` },
+        { field: 'tgtChannel', label: `${tgtWb.name} channel (Target)` },
+        { field: 'tgtAlias',   label: `${tgtWb.name} alias (Target)` },
+      ];
+      const mismatchRows = conflicts.map(srcRow => {
+        const tgtRow = tgtByTest.get(srcRow.testName);
+        return {
+          _tgtCode: tgtRow.code,
+          _srcData: { channel: srcRow.channel, alias: srcRow.alias, site: srcRow.site, default: srcRow.default, stat: srcRow.stat },
+          testName:   srcRow.testName,
+          srcChannel: srcRow.channel || '',
+          srcAlias:   srcRow.alias   || '',
+          tgtChannel: tgtRow.channel || '',
+          tgtAlias:   tgtRow.alias   || '',
+        };
+      });
+      document.getElementById('grid-mismatch').setData(mismatchCols, mismatchRows);
+      document.getElementById('dialog-mismatch').show();
+    } else {
+      applyFilters();
+      LabosToast.show(`${srcRows.length} mapping(s) imported to ${tgtWb.name}.`, 'success');
+    }
+  });
+
+  // ── Mismatch dialog ───────────────────────────────────────────────────────
+  document.getElementById('btn-mismatch-skip').addEventListener('click', () => {
+    applyFilters();
+    LabosToast.show('Import completed.', 'success');
+    document.getElementById('dialog-mismatch').hide();
+  });
+
+  document.getElementById('btn-mismatch-ok').addEventListener('click', () => {
+    const selected = document.getElementById('grid-mismatch').selectedRows;
+    selected.forEach(row => {
+      const idx = ALL_ROWS.findIndex(r => r.code === row._tgtCode);
+      if (idx !== -1) ALL_ROWS[idx] = { ...ALL_ROWS[idx], ...row._srcData };
+    });
+    applyFilters();
+    LabosToast.show('Import completed.', 'success');
+    document.getElementById('dialog-mismatch').hide();
+  });
+
+  // ── Default menu ─────────────────────────────────────────────────────────
+  const btnDefaultMenu = document.getElementById('btn-default-menu');
+  btnDefaultMenu.setItems([
+    { label: 'Set as default workbench',    value: 'set-default'    },
+    { label: 'Remove default workbench',    value: 'remove-default' },
+  ]);
+
+  btnDefaultMenu.addEventListener('labos-select', e => {
+    requireSelection(() => {
+      const codes = new Set(grid.selectedRows.map(r => r.code));
+      const isSet = e.detail.value === 'set-default';
+      ALL_ROWS.forEach(r => { if (codes.has(r.code)) r.default = isSet; });
+      applyFilters();
+      LabosToast.show(
+        isSet ? 'Set as default workbench.' : 'Default workbench removed.',
+        'success'
+      );
+    });
+  });
+
+  document.getElementById('btn-unused').addEventListener('click', () =>
+    console.log('Unused mappings'));
+</script>
+
+</body>
+</html>

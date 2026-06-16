@@ -1,0 +1,24 @@
+﻿# Memory Index
+
+- [LabOS Design System](project_labos_design_system.md) — Angular/AG Grid design system at X:\Product\Specs\Work Items\LaaS\UI\labos-design-system, built from Figma storybook (fileKey: 0UGfeXBwdgOOh1ZP8zpJHO)
+- [Component change policy](feedback_component_changes.md) — Always update labos-components.js AND the Angular design system source together
+- [Network drive write strategy](feedback_network_drive_writes.md) — X:\ is SMB (\\srvfs1\tree); use rename-swap via Write-SafeFile.ps1, never direct overwrite
+- [View toggle selection carry-over](ux_view_toggle_selection.md) — UX rule: selection state must be preserved when switching grid ↔ split view (all screens)
+- [Permission prompts preference](feedback_permission_prompts.md) — User wants minimal prompts; proceed on reads/writes without pausing
+- [Overlay/Dropdown shell standard](design_overlay_standard.md) — Floating overlays: background #FFF, box-shadow 0 4px 4px 0 rgba(0,0,0,.25), no border on shell
+- [Shared dropdown utility (LabosDropdown)](design_shared_dropdown.md) — All 6 dropdown components use LabosDropdown; new dropdowns must do the same
+- [form-row spacing](feedback_form_row_spacing.md) — .form-row must never have margin-bottom; labos-input's 60px height provides natural spacing
+- [Mandatory field submit validation](ux_mandatory_field_submit.md) — On submit: set [invalid] on all empty mandatory fields, focus first empty one, block submit
+- [Confirm dialog UX rules](ux_confirm_dialog.md) — type="confirm": red warning banner + initial focus on Cancel button
+- [Add entity button standard](ux_add_entity_button.md) — icon-only rounded 36px primary button, 10px right of search field, icon: add
+- [Screen layout order: search → actions → grid](ux_layout_search_actions_grid.md) — When screen has rounded search + action buttons + grid: search first, actions second, grid last
+- [Demo file location](feedback_demo_file.md) — All demos go to shared/demo.html ONLY — never to labos-design-system/demo/index.html
+- [Toast component rules](design_toast.md) — labos-toast: 48px, top-right 10px/10px below navbar, 4 types (success/warning/info/error), 3s auto-dismiss, slide animations
+- [No-selection action guard](ux_no_selection_dialog.md) — Action button with no row selected → labos-dialog type="warning" id="dialog-no-selection", never toast/alert
+- [Navbar breadcrumbs structure](ux_navbar_breadcrumbs.md) — Never include "LabOS" as first breadcrumb; always start with the screen name
+- [Splash screen pattern](design_splash_screen.md) — Full splash screen boilerplate (CSS + SVG logo animation + JS greeting) — copy verbatim into every new screen
+- [Text casing rule](feedback_text_casing.md) — Sentence case only: first word capitalized, all others lowercase (e.g. "Print order form", not "Print Order Form")
+- [Component-first policy](feedback_component_first_policy.md) — Always check shared Demo before building custom; stop and ask approval if component is missing- [Dialog button conventions](feedback_dialog_buttons.md) — Action button: variant="accent" on the right; Cancel always has icon="close"
+- [Text link style](feedback_text_link_style.md) — Every text link: color #265F68, font-weight 600, no underline — no exceptions
+- [Single Item screen layout](ux_single_item_layout.md) — Sticky header (title+badge / actions), .item-screen scroll container, .item-body content per entity
+- [Date format rule](feedback_date_format.md) — Always DD/MM/YYYY with / separator (e.g. 11/08/2026) — no ISO, no dots, no other formats

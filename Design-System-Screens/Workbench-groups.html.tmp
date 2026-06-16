@@ -1,0 +1,293 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Groups — LabOS</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<script src="../shared/labos-components.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+    background: #ffffff;
+    color: #333;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  :root {
+    --primary:      #265F68;
+    --primary-dark: #1F5156;
+    --primary-20:   #D5E0E1;
+    --warn:         #D20000;
+    --surface:      #F5F5F5;
+    --white:        #ffffff;
+  }
+
+  labos-navbar { flex-shrink: 0; }
+
+  .screen-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+
+  .screen-top { padding: 16px 16px 0; flex-shrink: 0; }
+
+  .search-zone { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+  .action-bar {
+    display: flex; align-items: center; gap: 10px;
+    height: 36px; margin-top: 16px; flex-shrink: 0;
+  }
+
+  labos-grid { margin: 12px 16px 0; }
+
+  /* Splash screen */
+  #splash {
+    position: fixed; inset: 0; background: #fff;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 9999; transition: opacity 0.6s ease;
+    --draw-speed: 0.75;
+  }
+  #splash.fade-out { opacity: 0; pointer-events: none; }
+  #splash svg { width: 300px; }
+  #splash .greeting {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 18px; font-weight: 300; color: #333;
+    margin-top: 28px; opacity: 0;
+    animation: splashGreeting 0.8s ease 0.7s both;
+  }
+  @keyframes splashGreeting {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div id="splash"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 716.95 164.92">
+  <defs><style>
+    .cls-1,.cls-2{stroke:#333}.cls-1,.cls-2,.cls-3{fill:none;stroke-linecap:round;stroke-width:17px}.cls-1,.cls-3{stroke-linejoin:round}.cls-2{stroke-miterlimit:10}.cls-3{stroke:#00b08a}
+    .draw{stroke-dasharray:1;stroke-dashoffset:1}.draw-rev{stroke-dasharray:1;stroke-dashoffset:-1}
+    @keyframes draw{to{stroke-dashoffset:0}}
+    @keyframes breathe{0%,100%{stroke-opacity:1}50%{stroke-opacity:.72}}
+    .el-cloud{animation:draw calc(.85s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.05s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-divider{animation:draw calc(.3s * var(--draw-speed,1)) ease-out calc(.55s * var(--draw-speed,1)) both}
+    .el-note-r{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-note-l{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-circle{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.1s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-s{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.6s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+  </style></defs>
+  <g>
+    <path pathLength="1" class="cls-3 draw-rev el-cloud" d="M195.39,156.4H49.82s-41.32,1.93-41.32-38.95c0-37.37,38.71-40.71,38.71-40.71,0,0,.91-22.5,19.57-32.15,19.12-9.89,34.43.18,34.43.18,0,0,5.03-24.98,37.85-34.19,31.93-8.97,56.33,14.04,56.33,14.04"/>
+    <line pathLength="1" class="cls-1 draw el-divider" x1="222.66" y1="8.5" x2="222.66" y2="156.42"/>
+    <path pathLength="1" class="cls-2 draw el-note-r" d="M394.68,70.21c5.37-2.28,11.28-3.53,17.48-3.53,24.78,0,44.87,20.09,44.87,44.87s-20.09,44.87-44.87,44.87-44.87-20.09-44.87-44.87V9.06"/>
+    <path pathLength="1" class="cls-2 draw el-note-l" d="M312.94,152.26c-5.37,2.28-11.28,3.53-17.48,3.53-24.78,0-44.87-20.09-44.87-44.87,0-24.78,20.09-44.87,44.87-44.87s44.87,20.09,44.87,44.87c0,6.2,0,45.49,0,45.49"/>
+    <circle pathLength="1" class="cls-3 draw el-circle" cx="546.26" cy="92.48" r="63.94"/>
+    <path pathLength="1" class="cls-3 draw el-s" d="M636.41,136.15s7.35,20.27,36.3,20.27c28.96,0,35.74-23.88,35.74-30.88,0-11.32-2.39-25.63-36.02-33.02-33.63-7.4-36.02-22.98-36.02-33.02,0-7,6.78-30.88,35.74-30.88s36.3,20.27,36.3,20.27"/>
+  </g>
+</svg>
+<p id="splash-greeting" class="greeting"></p>
+</div>
+
+<labos-navbar
+  breadcrumbs='[{"label":"Workbenches & devices","route":"workbenches-devices.html"},{"label":"Groups"}]'
+  user-name="Angela Doe"
+  lab-name="LabOS laboratory">
+</labos-navbar>
+
+<div class="screen-body">
+  <div class="screen-top">
+
+    <div class="search-zone">
+      <labos-rounded-search id="main-search" placeholder="Search for group" style="width:300px" mode="filter"></labos-rounded-search>
+    </div>
+
+    <div class="action-bar">
+      <labos-button id="btn-add"    icon="add">Add</labos-button>
+      <labos-button id="btn-edit"   icon="edit">Edit</labos-button>
+      <labos-button id="btn-delete" icon="delete">Delete</labos-button>
+    </div>
+
+  </div>
+
+  <labos-grid id="grid" title="Groups"></labos-grid>
+
+</div>
+
+<labos-dialog id="dialog-no-selection" type="warning" title="Selection required">
+  <p style="font-size:14px;color:#333">Please select at least one item</p>
+  <labos-button slot="footer" variant="default" icon="check" onclick="document.getElementById('dialog-no-selection').hide()">OK</labos-button>
+</labos-dialog>
+
+<labos-dialog id="dialog-delete" type="confirm" title="Delete group">
+  <p style="font-size:14px;color:#333">Are you sure you want to delete the selected group?</p>
+  <labos-button slot="footer" variant="warn"    icon="delete" id="btn-delete-confirm">Delete</labos-button>
+  <labos-button slot="footer" variant="default" cancel onclick="document.getElementById('dialog-delete').hide()">Cancel</labos-button>
+</labos-dialog>
+
+<labos-dialog id="dialog-add" title="Add group" style="--dialog-width:480px">
+  <labos-input id="add-code"       placeholder="Code"            mandatory></labos-input>
+  <labos-input id="add-short-name" placeholder="Short name"      mandatory></labos-input>
+  <labos-input id="add-full-name"  placeholder="Full name"       mandatory></labos-input>
+  <labos-input id="add-department" placeholder="Department"></labos-input>
+  <labos-input id="add-site"       placeholder="Performing site" mandatory></labos-input>
+  <labos-select id="add-type"      placeholder="Type"></labos-select>
+  <div style="display:flex;align-items:center;height:60px">
+    <labos-toggle id="add-active" label="Active" checked></labos-toggle>
+  </div>
+  <labos-button slot="footer" variant="default" cancel onclick="document.getElementById('dialog-add').hide()">Cancel</labos-button>
+  <labos-button slot="footer" variant="accent"  icon="save" id="btn-add-save">Save</labos-button>
+</labos-dialog>
+
+<script>
+  (function() {
+    var s = document.getElementById('splash');
+    var isReload = (performance.getEntriesByType('navigation')[0] || {}).type === 'reload';
+    var fromNav  = sessionStorage.getItem('labos_nav') === '1';
+    sessionStorage.removeItem('labos_nav');
+    if (!isReload && fromNav) { s.remove(); return; }
+    var h = new Date().getHours();
+    var g = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+    var parts = (document.querySelector('labos-navbar')?.getAttribute('user-name') || '').trim().split(/\s+/);
+    var first = /^(Dr\.|Prof\.|Mr\.|Mrs\.|Ms\.)$/i.test(parts[0]) ? (parts[1] || '') : (parts[0] || '');
+    document.getElementById('splash-greeting').textContent = first ? g + ', ' + first : g;
+    setTimeout(function() {
+      s.classList.add('fade-out');
+      s.addEventListener('transitionend', function() { s.remove(); }, { once: true });
+    }, 3000);
+  })();
+</script>
+
+<script>
+  document.addEventListener('click', function(e) {
+    var path = e.composedPath ? e.composedPath() : [];
+    var a = path.find(function(el) { return el.tagName === 'A' && el.href && !el.target; });
+    if (a && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+      sessionStorage.setItem('labos_nav', '1');
+    }
+  }, true);
+</script>
+
+<script>
+  let ALL_ROWS = [
+    { code: 'ACL',     shortName: 'ACL',     fullName: 'Automated Chemistry Lab',      department: 'Chemistry',    site: 'Netlims NJ Laboratory', type: 'Host request',   active: true  },
+    { code: 'IMAX',    shortName: 'IMAX',    fullName: 'Immunology & Allergy',          department: 'Immunology',   site: 'Netlims NJ Laboratory', type: 'Unidirectional', active: true  },
+    { code: 'BARCODE', shortName: 'BARCODE', fullName: 'Barcode Scanning Station',      department: 'Reception',    site: 'Netlims NJ Laboratory', type: 'Bidirectional',  active: false },
+    { code: 'LX',      shortName: 'LX',      fullName: 'Leukocyte Examination Unit',    department: 'Hematology',   site: 'Netlims NJ Laboratory', type: 'Host request',   active: true  },
+    { code: 'MICRO',   shortName: 'MICRO',   fullName: 'Microbiology Workbench Group',  department: 'Microbiology', site: 'Netlims NJ Laboratory', type: 'Bidirectional',  active: true  },
+    { code: 'PATH',    shortName: 'PATH',    fullName: 'Pathology Processing',          department: 'Pathology',    site: 'Netlims NJ Laboratory', type: 'Unidirectional', active: false },
+  ];
+  let searchText = '';
+
+  const COLUMNS = [
+    { field: 'code',        label: 'Code',             sortable: true, filterable: true },
+    { field: 'shortName',   label: 'Short name',       sortable: true, filterable: true },
+    { field: 'fullName',    label: 'Full name',        sortable: true, filterable: true },
+    { field: 'department',  label: 'Department',       sortable: true, filterable: true },
+    { field: 'site',        label: 'Performing site',  sortable: true, filterable: true },
+    { field: 'type',        label: 'Type',             sortable: true, filterable: true },
+    { field: 'active',      label: 'Active', icon: 'done', type: 'icon-only' },
+  ];
+
+  const grid = document.getElementById('grid');
+
+  function applyFilters() {
+    const q = searchText.toLowerCase();
+    const rows = q ? ALL_ROWS.filter(r =>
+      r.code.toLowerCase().includes(q) ||
+      r.shortName.toLowerCase().includes(q) ||
+      r.fullName.toLowerCase().includes(q) ||
+      r.department.toLowerCase().includes(q)
+    ) : ALL_ROWS;
+    grid.setData(COLUMNS, rows);
+  }
+
+  applyFilters();
+
+  document.getElementById('main-search').addEventListener('labos-input', e => {
+    searchText = e.detail?.value || '';
+    applyFilters();
+  });
+
+  function requireSelection(fn) {
+    if (!grid.selectedRows.length) {
+      document.getElementById('dialog-no-selection').show();
+    } else {
+      fn();
+    }
+  }
+
+  document.getElementById('add-type').setOptions([
+    { label: 'Host request',   value: 'Host request'   },
+    { label: 'Unidirectional', value: 'Unidirectional' },
+    { label: 'Bidirectional',  value: 'Bidirectional'  },
+  ]);
+
+  function resetAddDialog() {
+    ['add-code','add-short-name','add-full-name','add-department','add-site'].forEach(id => {
+      const el = document.getElementById(id);
+      el.value = '';
+      el.removeAttribute('invalid');
+    });
+    document.getElementById('add-type').value = '';
+    document.getElementById('add-active').checked = true;
+  }
+
+  document.getElementById('btn-add').addEventListener('click', () => {
+    resetAddDialog();
+    document.getElementById('dialog-add').show();
+  });
+
+  document.getElementById('btn-add-save').addEventListener('click', () => {
+    const mandatory = [
+      document.getElementById('add-code'),
+      document.getElementById('add-short-name'),
+      document.getElementById('add-full-name'),
+      document.getElementById('add-site'),
+    ];
+    let firstEmpty = null;
+    mandatory.forEach(el => {
+      if (!el.value.trim()) {
+        el.setAttribute('invalid', '');
+        if (!firstEmpty) firstEmpty = el;
+      } else {
+        el.removeAttribute('invalid');
+      }
+    });
+    if (firstEmpty) { firstEmpty.focus(); return; }
+
+    ALL_ROWS.push({
+      code:       document.getElementById('add-code').value.trim(),
+      shortName:  document.getElementById('add-short-name').value.trim(),
+      fullName:   document.getElementById('add-full-name').value.trim(),
+      department: document.getElementById('add-department').value.trim(),
+      site:       document.getElementById('add-site').value.trim(),
+      type:       document.getElementById('add-type').value || '',
+      active:     document.getElementById('add-active').checked,
+    });
+    applyFilters();
+    document.getElementById('dialog-add').hide();
+    LabosToast.show('Group added.', 'success');
+  });
+
+  document.getElementById('btn-edit').addEventListener('click', () =>
+    requireSelection(() => {
+      console.log('Edit group:', grid.selectedRows[0]);
+    }));
+
+  document.getElementById('btn-delete').addEventListener('click', () =>
+    requireSelection(() => document.getElementById('dialog-delete').show()));
+
+  document.getElementById('btn-delete-confirm').addEventListener('click', () => {
+    const codes = grid.selectedRows.map(r => r.code);
+    ALL_ROWS = ALL_ROWS.filter(r => !codes.includes(r.code));
+    applyFilters();
+    document.getElementById('dialog-delete').hide();
+    LabosToast.show('Group deleted.', 'success');
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,238 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workbenches &amp; Devices — LabOS</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<script src="../shared/labos-components.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+    background: #ffffff;
+    color: #333;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  :root {
+    --primary:      #265F68;
+    --primary-dark: #1F5156;
+    --primary-20:   #D5E0E1;
+    --warn:         #D20000;
+    --surface:      #F5F5F5;
+    --white:        #ffffff;
+  }
+
+  labos-navbar { flex-shrink: 0; }
+
+  /* ── Screen body ── */
+  .screen-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px 80px;
+  }
+
+  /* ── Page title ── */
+  .page-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  /* ── Search ── */
+  .search-wrap {
+    width: 340px;
+    margin-bottom: 28px;
+  }
+
+  /* ── Nav tiles row ── */
+  .nav-row {
+    display: flex;
+    gap: 0;
+    border: 1px solid #e0e0e0;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .nav-tile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 52px;
+    padding: 0 14px 0 16px;
+    cursor: pointer;
+    background: #fff;
+    border: none;
+    border-right: 1px solid #e0e0e0;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary);
+    text-decoration: none;
+    transition: background 120ms;
+    white-space: nowrap;
+  }
+  .nav-tile:last-child { border-right: none; }
+  .nav-tile:hover { background: rgba(38,95,104,.06); }
+
+  .nav-tile .material-icons.tile-icon {
+    font-size: 18px;
+    color: var(--primary);
+  }
+
+  .nav-tile .tile-label { flex: 1; }
+
+  .nav-tile .tile-add {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin-left: 6px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--primary);
+    transition: background 120ms;
+  }
+  .nav-tile .tile-add:hover { background: rgba(38,95,104,.14); }
+  .nav-tile .tile-add .material-icons { font-size: 18px; }
+
+  /* ── Splash screen ── */
+  #splash {
+    position: fixed; inset: 0; background: #fff;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 9999; transition: opacity 0.6s ease;
+    --draw-speed: 0.75;
+  }
+  #splash.fade-out { opacity: 0; pointer-events: none; }
+  #splash svg { width: 300px; }
+  #splash .greeting {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 18px; font-weight: 300; color: #333;
+    margin-top: 28px; opacity: 0;
+    animation: splashGreeting 0.8s ease 0.7s both;
+  }
+  @keyframes splashGreeting {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ Splash ══════════════════════════════════════════════════════════════ -->
+<div id="splash"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 716.95 164.92">
+  <defs><style>
+    .cls-1,.cls-2{stroke:#333}.cls-1,.cls-2,.cls-3{fill:none;stroke-linecap:round;stroke-width:17px}.cls-1,.cls-3{stroke-linejoin:round}.cls-2{stroke-miterlimit:10}.cls-3{stroke:#00b08a}
+    .draw{stroke-dasharray:1;stroke-dashoffset:1}.draw-rev{stroke-dasharray:1;stroke-dashoffset:-1}
+    @keyframes draw{to{stroke-dashoffset:0}}
+    @keyframes breathe{0%,100%{stroke-opacity:1}50%{stroke-opacity:.72}}
+    .el-cloud{animation:draw calc(.85s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.05s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-divider{animation:draw calc(.3s * var(--draw-speed,1)) ease-out calc(.55s * var(--draw-speed,1)) both}
+    .el-note-r{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-note-l{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-circle{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.1s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-s{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.6s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+  </style></defs>
+  <g>
+    <path pathLength="1" class="cls-3 draw-rev el-cloud" d="M195.39,156.4H49.82s-41.32,1.93-41.32-38.95c0-37.37,38.71-40.71,38.71-40.71,0,0,.91-22.5,19.57-32.15,19.12-9.89,34.43.18,34.43.18,0,0,5.03-24.98,37.85-34.19,31.93-8.97,56.33,14.04,56.33,14.04"/>
+    <line pathLength="1" class="cls-1 draw el-divider" x1="222.66" y1="8.5" x2="222.66" y2="156.42"/>
+    <path pathLength="1" class="cls-2 draw el-note-r" d="M394.68,70.21c5.37-2.28,11.28-3.53,17.48-3.53,24.78,0,44.87,20.09,44.87,44.87s-20.09,44.87-44.87,44.87-44.87-20.09-44.87-44.87V9.06"/>
+    <path pathLength="1" class="cls-2 draw el-note-l" d="M312.94,152.26c-5.37,2.28-11.28,3.53-17.48,3.53-24.78,0-44.87-20.09-44.87-44.87,0-24.78,20.09-44.87,44.87-44.87s44.87,20.09,44.87,44.87c0,6.2,0,45.49,0,45.49"/>
+    <circle pathLength="1" class="cls-3 draw el-circle" cx="546.26" cy="92.48" r="63.94"/>
+    <path pathLength="1" class="cls-3 draw el-s" d="M636.41,136.15s7.35,20.27,36.3,20.27c28.96,0,35.74-23.88,35.74-30.88,0-11.32-2.39-25.63-36.02-33.02-33.63-7.4-36.02-22.98-36.02-33.02,0-7,6.78-30.88,35.74-30.88s36.3,20.27,36.3,20.27"/>
+  </g>
+</svg>
+<p id="splash-greeting" class="greeting"></p>
+</div>
+
+<!-- ══ Navbar ═══════════════════════════════════════════════════════════════ -->
+<labos-navbar
+  breadcrumbs='[{"label":"Workbenches & devices"}]'
+  user-name="Angela Doe"
+  lab-name="LabOS laboratory">
+</labos-navbar>
+
+<!-- ══ Screen body ══════════════════════════════════════════════════════════ -->
+<div class="screen-body">
+
+  <h1 class="page-title">Workbenches &amp; devices</h1>
+
+  <div class="search-wrap">
+    <labos-rounded-search id="main-search" placeholder="Search"></labos-rounded-search>
+  </div>
+
+  <nav class="nav-row" aria-label="Sections">
+
+    <a class="nav-tile" href="workbenches.html">
+      <span class="material-icons tile-icon">workspaces</span>
+      <span class="tile-label">Workbenches</span>
+      <button class="tile-add" title="Add workbench" onclick="event.preventDefault(); event.stopPropagation();">
+        <span class="material-icons">add</span>
+      </button>
+    </a>
+
+    <a class="nav-tile" href="Workbench-groups.html">
+      <span class="material-icons tile-icon">people</span>
+      <span class="tile-label">Groups</span>
+      <button class="tile-add" title="Add group" onclick="event.preventDefault(); event.stopPropagation();">
+        <span class="material-icons">add</span>
+      </button>
+    </a>
+
+    <a class="nav-tile" href="test-mapping.html">
+      <span class="material-icons tile-icon">grid_view</span>
+      <span class="tile-label">Test mapping</span>
+      <button class="tile-add" title="Add test mapping" onclick="event.preventDefault(); event.stopPropagation();">
+        <span class="material-icons">add</span>
+      </button>
+    </a>
+
+  </nav>
+
+</div>
+
+<!-- ══ Splash JS ════════════════════════════════════════════════════════════ -->
+<script>
+  (function() {
+    var s = document.getElementById('splash');
+    var isReload = (performance.getEntriesByType('navigation')[0] || {}).type === 'reload';
+    var fromNav  = sessionStorage.getItem('labos_nav') === '1';
+    sessionStorage.removeItem('labos_nav');
+    if (!isReload && fromNav) { s.remove(); return; }
+    var h = new Date().getHours();
+    var g = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+    var parts = (document.querySelector('labos-navbar')?.getAttribute('user-name') || '').trim().split(/\s+/);
+    var first = /^(Dr\.|Prof\.|Mr\.|Mrs\.|Ms\.)$/i.test(parts[0]) ? (parts[1] || '') : (parts[0] || '');
+    document.getElementById('splash-greeting').textContent = first ? g + ', ' + first : g;
+    setTimeout(function() {
+      s.classList.add('fade-out');
+      s.addEventListener('transitionend', function() { s.remove(); }, { once: true });
+    }, 3000);
+  })();
+</script>
+
+<script>
+  document.addEventListener('click', function(e) {
+    var path = e.composedPath ? e.composedPath() : [];
+    var a = path.find(function(el) { return el.tagName === 'A' && el.href && !el.target; });
+    if (a && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+      sessionStorage.setItem('labos_nav', '1');
+    }
+  }, true);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,648 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sample #2024-001 — LabOS</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<script src="../shared/labos-components.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+    background: #fff;
+    color: #333;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  :root {
+    --primary:      #265F68;
+    --primary-dark: #1F5156;
+    --primary-20:   #D5E0E1;
+    --warn:         #D20000;
+    --warn-hover:   #B90000;
+    --surface:      #F5F5F5;
+    --white:        #ffffff;
+    --disabled-op:  0.4;
+    --transition:   background 150ms ease, opacity 150ms ease,
+                    border-color 150ms ease, box-shadow 150ms ease;
+  }
+
+  labos-navbar { flex-shrink: 0; }
+
+  /* ── Single item screen layout ── */
+  .item-screen {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .item-header {
+    flex-shrink: 0;
+    background: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .screen-top  { padding: 16px; border-bottom: 1px solid #E4E4E4; }
+  .search-zone { display: flex; align-items: center; gap: 10px; }
+  .search-zone labos-rounded-search { width: 300px; flex-shrink: 0; }
+
+  .item-identity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px 0;
+  }
+  .item-title { font-size: 20px; font-weight: 600; color: #333; }
+
+  .item-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px 16px;
+  }
+
+  .item-content {
+    margin: 0 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .item-body {
+    flex: 1;
+    padding-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  labos-grid {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* ── Item Summary bar ── */
+  .is-bar{display:flex;align-items:center;height:40px;background:#ffffff;overflow:hidden;flex-shrink:0;margin-top:12px;margin-left:16px;margin-right:16px}
+  .is-sep{flex-shrink:0;width:1px;align-self:stretch;background:#dddddd;margin:0 10px}
+  .is-c{display:flex;flex-direction:column;height:40px;flex-shrink:0}
+  .is-c__v{padding-top:8px;font:400 14px/14px 'Open Sans',sans-serif;color:#333333;white-space:nowrap;letter-spacing:.1px}
+  .is-c__v--lnk{font-weight:600;color:#266268}
+  .is-c__lbl{margin-top:5px;font:600 11px/11px 'Open Sans',sans-serif;color:#999999;white-space:nowrap;letter-spacing:.1px}
+  .is-c--last{padding-right:10px}
+  .is-id{display:flex;align-items:center;flex-shrink:0}
+  .is-id__body{display:flex;flex-direction:column;height:40px;padding-top:4px;padding-bottom:2px;justify-content:space-between}
+  .is-id__row1{display:flex;align-items:flex-end;gap:8px}
+  .is-id__name{font:600 20px/1 'Open Sans',sans-serif;color:#333333;letter-spacing:.1px;white-space:nowrap}
+  .is-id__chip{background:#ffffff;border:1px solid #cccccc;border-radius:3px;padding:0 7px;height:19px;display:inline-flex;align-items:center;font:600 11px/1 'Open Sans',sans-serif;color:#333333;white-space:nowrap}
+  .is-id__chip--bl{background:var(--blue-lighten-45,#E1EDFC);border-color:#A0C4F0;color:#265F68}
+  .is-id__sub{font:600 11px/1 'Open Sans',sans-serif;color:#999999;letter-spacing:.1px;white-space:nowrap}
+  .is-id__inds{display:flex;flex-direction:row;align-items:center;gap:4px;margin-right:4px;align-self:flex-start;margin-top:6px}
+  .sc{position:relative;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-sizing:border-box}
+  .sc--md{width:40px;height:40px}
+  .sc--cl{background:var(--sc-bg,#9C27B0)}
+  .sc__ico{display:flex;align-items:center;justify-content:center;color:#ffffff}
+  .sc__ico .material-icons{font-size:20px}
+
+
+  /* ── Splash screen ── */
+  #splash {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.6s ease;
+    --draw-speed: 0.75;
+  }
+  #splash.fade-out { opacity: 0; pointer-events: none; }
+  #splash svg { width: 300px; }
+  #splash .greeting {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 18px; font-weight: 300; color: #333;
+    margin-top: 28px; opacity: 0;
+    animation: splashGreeting 0.8s ease 0.7s both;
+  }
+  @keyframes splashGreeting {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div id="splash"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 716.95 164.92">
+  <defs><style>
+    .cls-1,.cls-2{stroke:#333}.cls-1,.cls-2,.cls-3{fill:none;stroke-linecap:round;stroke-width:17px}.cls-1,.cls-3{stroke-linejoin:round}.cls-2{stroke-miterlimit:10}.cls-3{stroke:#00b08a}
+    .draw{stroke-dasharray:1;stroke-dashoffset:1}.draw-rev{stroke-dasharray:1;stroke-dashoffset:-1}
+    @keyframes draw{to{stroke-dashoffset:0}}
+    @keyframes breathe{0%,100%{stroke-opacity:1}50%{stroke-opacity:.72}}
+    .el-cloud{animation:draw calc(.85s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.05s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-divider{animation:draw calc(.3s * var(--draw-speed,1)) ease-out calc(.55s * var(--draw-speed,1)) both}
+    .el-note-r{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-note-l{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-circle{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.1s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-s{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.6s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+  </style></defs>
+  <g>
+    <path pathLength="1" class="cls-3 draw-rev el-cloud" d="M195.39,156.4H49.82s-41.32,1.93-41.32-38.95c0-37.37,38.71-40.71,38.71-40.71,0,0,.91-22.5,19.57-32.15,19.12-9.89,34.43.18,34.43.18,0,0,5.03-24.98,37.85-34.19,31.93-8.97,56.33,14.04,56.33,14.04"/>
+    <line pathLength="1" class="cls-1 draw el-divider" x1="222.66" y1="8.5" x2="222.66" y2="156.42"/>
+    <path pathLength="1" class="cls-2 draw el-note-r" d="M394.68,70.21c5.37-2.28,11.28-3.53,17.48-3.53,24.78,0,44.87,20.09,44.87,44.87s-20.09,44.87-44.87,44.87-44.87-20.09-44.87-44.87V9.06"/>
+    <path pathLength="1" class="cls-2 draw el-note-l" d="M312.94,152.26c-5.37,2.28-11.28,3.53-17.48,3.53-24.78,0-44.87-20.09-44.87-44.87,0-24.78,20.09-44.87,44.87-44.87s44.87,20.09,44.87,44.87c0,6.2,0,45.49,0,45.49"/>
+    <circle pathLength="1" class="cls-3 draw el-circle" cx="546.26" cy="92.48" r="63.94"/>
+    <path pathLength="1" class="cls-3 draw el-s" d="M636.41,136.15s7.35,20.27,36.3,20.27c28.96,0,35.74-23.88,35.74-30.88,0-11.32-2.39-25.63-36.02-33.02-33.63-7.4-36.02-22.98-36.02-33.02,0-7,6.78-30.88,35.74-30.88s36.3,20.27,36.3,20.27"/>
+  </g>
+</svg>
+<p id="splash-greeting" class="greeting"></p>
+</div>
+
+<!-- ── NAVBAR ── -->
+<labos-navbar
+  id="navbar"
+  breadcrumbs='[{"label":"Samples","href":"samples.html"},{"label":"Sample #2024-001"}]'
+  user-name="John Smith"
+  user-org="LabOS laboratory">
+</labos-navbar>
+
+<!-- ── SCREEN ── -->
+<div class="item-screen">
+  <div class="item-header">
+
+    <!-- Row 1: search + add -->
+    <div class="screen-top">
+      <div class="search-zone">
+        <labos-rounded-search id="sample-search" placeholder="Search samples…"></labos-rounded-search>
+        <labos-button shape="rounded" icon="add" title="New sample"></labos-button>
+        <labos-patient-summary id="patient-bar" style="margin-left:auto"></labos-patient-summary>
+      </div>
+    </div>
+
+    <!-- Row 2: item summary bar (Entity = Sample) -->
+    <div class="is-bar">
+      <div class="is-id">
+        <div class="is-id__inds">
+          <labos-indication icon="circle" color="#00A3D9" size="18" label="Priority"></labos-indication>
+        </div>
+        <div class="sc sc--md sc--cl" style="--sc-bg:#9C27B0;margin-right:8px">
+          <span class="sc__ico"><span class="material-icons">water_drop</span></span>
+        </div>
+        <div class="is-id__body">
+          <div class="is-id__row1">
+            <span class="is-id__name">Sample #2024-001</span>
+            <span class="is-id__chip is-id__chip--bl">Received</span>
+            <labos-serial-time hours="2" minutes="17"></labos-serial-time>
+          </div>
+          <div class="is-id__sub">ACC-2024-0892</div>
+        </div>
+      </div>
+      <div class="is-sep"></div>
+      <div class="is-c"><div class="is-c__v">ENC-7734</div><div class="is-c__lbl">ENCT #</div></div>
+      <div class="is-sep"></div>
+      <div class="is-c"><div class="is-c__v">34Y&#160;10M&#160;4D</div><div class="is-c__lbl">Age</div></div>
+      <div class="is-sep"></div>
+      <div class="is-c"><div class="is-c__v is-c__v--lnk">David Cohen</div><div class="is-c__lbl">Patient</div></div>
+      <div class="is-sep"></div>
+      <div class="is-c"><div class="is-c__v">09/06/2026</div><div class="is-c__lbl">Order date</div></div>
+      <div class="is-sep"></div>
+      <div class="is-c"><div class="is-c__v">EDTA whole blood</div><div class="is-c__lbl">Sample type</div></div>
+      <div class="is-sep"></div>
+      <div class="is-c is-c--last"><div class="is-c__v">Hematology</div><div class="is-c__lbl">Department</div></div>
+      <labos-button shape="rounded" icon="more_horiz" borderless title="More details"></labos-button>
+    </div>
+
+    <!-- Row 3: actions -->
+    <div class="item-actions">
+      <labos-button-menu id="btn-approve"  type="menu" label="Approve" icon="done"></labos-button-menu>
+      <labos-button-menu id="btn-print"    type="menu" label="Print"      icon="print"></labos-button-menu>
+      <labos-button-menu id="btn-dist"     type="menu" label="Distribute" icon="send"></labos-button-menu>
+      <labos-button-menu id="btn-transmit" type="menu" label="Transmit"   icon="wifi"></labos-button-menu>
+      <labos-button-menu id="btn-more"     label="More"></labos-button-menu>
+    </div>
+
+  </div>
+
+  <div class="item-content">
+    <labos-banner-alert id="bcrabl-banner" type="info" message="Results history graphs" expandable style="margin-bottom:12px;"></labos-banner-alert>
+    <div class="item-body">
+      <labos-grid id="tests-grid" title="Tests" mode="simple" row-expand></labos-grid>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── Patients suspected as duplicates dialog ── -->
+<labos-dialog id="dialog-merge" title="Patients suspected as duplicates" size="xl">
+  <labos-grid id="merge-grid" mode="simple" select="multi"></labos-grid>
+  <labos-button slot="footer" icon="close" cancel>Cancel</labos-button>
+  <labos-button slot="footer" id="btn-do-merge" variant="accent" icon="merge" disabled>Select</labos-button>
+</labos-dialog>
+<script>
+  // ── Grid columns ─────────────────────────────────────────────────────────────
+  const STATUS_BG = {
+    'Pending':     'var(--brown-lighten-45)',
+    'In progress': 'var(--blue-lighten-45)',
+    'Completed':   'var(--green-lighten-45)',
+    'Cancelled':   'var(--red-lighten-45)',
+  };
+
+  const COLUMNS = [
+    { field: 'stat',     type: 'icon-only', icon: 'notifications_active', title: 'Stat', color: '#FFA500' },
+    { field: 'testName', label: 'Test' },
+    { field: 'testType', label: '', render: v => v === 'formula' ? '<span title="Formula test" class="material-icons" style="font-size:16px;color:#265F68;vertical-align:middle">functions</span>' : '' },
+    { field: 'result',   label: 'Result' },
+    {
+      field: 'status', label: 'Status',
+      render: v => `<labos-badge label="${v}" bg="${STATUS_BG[v] || 'var(--surface)'}" variant="bright"></labos-badge>`,
+    },
+    { field: 'flags',             label: 'Flags' },
+    { field: 'importantComments', label: 'Important comments' },
+  ];
+
+    const ALL_TESTS = [
+    { stat: true,  testName: 'WBC',               result: '11.8',  status: 'Completed',   flags: 'HH', importantComments: 'Critical value — physician notified' },
+    { stat: true,  testName: 'Hemoglobin',         result: '7.4',   status: 'Completed',   flags: 'L',  importantComments: 'Below reference range' },
+    { stat: false, testName: 'RBC',               result: '',      status: 'In progress', flags: '',   importantComments: '' },
+    { stat: false, testName: 'Hematocrit',         result: '',      status: 'Pending',     flags: '',   importantComments: '' },
+    { stat: false, testName: 'MCV',               result: '71.2',  status: 'Completed',   flags: 'L',  importantComments: '' },
+    { stat: false, testName: 'MCH',               result: '22.8',  status: 'Completed',   flags: 'L',  importantComments: '' },
+    { stat: false, testName: 'Platelets',          result: '430',   status: 'Completed',   flags: 'H',  importantComments: '' },
+    { stat: false, testName: 'Neutrophils',        result: '',      status: 'Cancelled',   flags: '',   importantComments: 'Sample volume insufficient' },
+    { stat: false, testName: 'P210 trends graph',  result: '0.03%', status: 'Completed',   flags: '',   importantComments: '', testType: 'formula' },
+    { stat: false, testName: 'P190 trends graph',  result: '0.02%', status: 'Completed',   flags: '',   importantComments: '', testType: 'formula' },
+  ];
+
+  const grid = document.getElementById('tests-grid');
+  grid.setData(COLUMNS, ALL_TESTS);
+
+  // ── Row expand ───────────────────────────────────────────────────────────────
+    const EXPAND_DATA = [
+    { refRange: '4.5 – 11.0',   method: 'Impedance / optical', analyzer: 'Sysmex XN-3000', operator: 'Dr. Sarah Cohen', completedAt: '09/06/2026 11:42' },
+    { refRange: '12.0 – 16.0',  method: 'Photometry (SLS)',    analyzer: 'Sysmex XN-3000', operator: 'Dr. Sarah Cohen', completedAt: '09/06/2026 11:38' },
+    { refRange: '4.20 – 5.40',  method: 'Impedance',           analyzer: 'Sysmex XN-3000', operator: '—',              completedAt: '—' },
+    { refRange: '37.0 – 47.0',  method: 'Calculated',          analyzer: 'Sysmex XN-3000', operator: '—',              completedAt: '—' },
+    { refRange: '80.0 – 100.0', method: 'Calculated',          analyzer: 'Sysmex XN-3000', operator: 'Dr. David Levy',  completedAt: '09/06/2026 10:55' },
+    { refRange: '27.0 – 33.0',  method: 'Calculated',          analyzer: 'Sysmex XN-3000', operator: 'Dr. David Levy',  completedAt: '09/06/2026 10:50' },
+    { refRange: '150 – 400',    method: 'Impedance',           analyzer: 'Sysmex XN-3000', operator: 'Dr. David Levy',  completedAt: '09/06/2026 10:48' },
+    { refRange: '45 – 75',      method: 'Flow cytometry',      analyzer: 'Sysmex XN-3000', operator: '—',              completedAt: '—' },
+    { chartType: 'p210' },
+    { chartType: 'p190' },
+  ];
+
+  grid.addEventListener('labos-row-expand', e => {
+    const d = EXPAND_DATA[e.detail.index];
+    if (!d) return;
+    if (d.chartType) {
+      e.detail.panel.innerHTML = '<labos-line-chart height="200" legend="false"></labos-line-chart>';
+      const lc = e.detail.panel.querySelector('labos-line-chart');
+      const origPts = d.chartType === 'p210' ? ORIGINAL_P210 : ORIGINAL_P190;
+      const opts    = d.chartType === 'p210' ? CHART_OPTS : P190_OPTS;
+      const built   = _buildSeries(origPts, mergedSeries, 'Sample #2024-001', '#265F68');
+      lc.setData(built.series, built.categories, opts);
+      return;
+    }
+    e.detail.panel.innerHTML = `
+      <div style="display:flex;gap:32px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#888;letter-spacing:.06em;margin-bottom:4px">Reference range</div>
+          <div style="font-size:13px">${d.refRange}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#888;letter-spacing:.06em;margin-bottom:4px">Method</div>
+          <div style="font-size:13px">${d.method}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#888;letter-spacing:.06em;margin-bottom:4px">Analyzer</div>
+          <div style="font-size:13px">${d.analyzer}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#888;letter-spacing:.06em;margin-bottom:4px">Operator</div>
+          <div style="font-size:13px">${d.operator}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#888;letter-spacing:.06em;margin-bottom:4px">Completed at</div>
+          <div style="font-size:13px">${d.completedAt}</div>
+        </div>
+      </div>`;
+  });
+
+  // ── Action button menus ───────────────────────────────────────────────────────
+  document.getElementById('btn-approve').setItems([
+    { label: 'Approve all',            value: 'approve-all' },
+    { label: 'Approve selected tests', value: 'approve-selected' },
+  ]);
+  document.getElementById('btn-approve').addEventListener('labos-click', () => {
+    console.log('Approve all results');
+  });
+  document.getElementById('btn-approve').addEventListener('labos-select', e => {
+    console.log('Approve:', e.detail.value);
+  });
+
+  document.getElementById('btn-print').setItems([
+    { label: 'Print report',     value: 'report' },
+    { label: 'Print labels',     value: 'labels' },
+    { label: 'Print order form', value: 'order-form' },
+  ]);
+  document.getElementById('btn-print').addEventListener('labos-click', () => {
+    console.log('Print report');
+  });
+  document.getElementById('btn-print').addEventListener('labos-select', e => {
+    console.log('Print:', e.detail.value);
+  });
+
+  document.getElementById('btn-dist').setItems([
+    { label: 'Distribute to physician', value: 'physician' },
+    { label: 'Distribute to patient',   value: 'patient' },
+    { label: 'Export as PDF',           value: 'pdf' },
+  ]);
+  document.getElementById('btn-dist').addEventListener('labos-click', () => {
+    console.log('Distribute');
+  });
+  document.getElementById('btn-dist').addEventListener('labos-select', e => {
+    console.log('Distribute:', e.detail.value);
+  });
+
+  document.getElementById('btn-transmit').setItems([
+    { label: 'Transmit all results',      value: 'all' },
+    { label: 'Transmit selected results', value: 'selected' },
+    { label: 'Preview transmission',      value: 'preview' },
+  ]);
+  document.getElementById('btn-transmit').addEventListener('labos-click', () => {
+    console.log('Transmit');
+  });
+  document.getElementById('btn-transmit').addEventListener('labos-select', e => {
+    console.log('Transmit:', e.detail.value);
+  });
+
+  document.getElementById('btn-more').setItems([
+    { label: 'Set as critical',  value: 'critical' },
+    { label: 'Add comment',      value: 'comment' },
+    { label: 'View history',     value: 'history' },
+    { label: 'Cancel sample',    value: 'cancel' },
+  ]);
+  document.getElementById('btn-more').addEventListener('labos-select', e => {
+    console.log('More:', e.detail.value);
+  });
+</script>
+
+<script>
+  // ── BCR/ABL chart — data stored as {date,value} pairs; categories built dynamically ──
+  const ORIGINAL_P210 = [
+    { date: '03/07/2023', value: 95    },
+    { date: '08/06/2023', value: 1.0   },
+    { date: '01/05/2024', value: 0.012 },
+    { date: '06/05/2024', value: 0.025 },
+    { date: '11/04/2024', value: 0.005 },
+    { date: '04/05/2025', value: 0.3   },
+    { date: '09/04/2025', value: 0.1   },
+    { date: '02/03/2026', value: 0.03  },
+  ];
+
+  const CURRENT_PATIENT = { patientId: 'LAB-2892', patientName: 'David Cohen', dob: '12/03/1956' };
+  const _tooltipData = new Map();
+
+  const CHART_OPTS = {
+    yAxis: {
+      type: 'logarithmic',
+      min: 0.001,
+      max: 100,
+      tickPositions: [0.001, 0.01, 0.1, 1, 10, 100],
+      title: { text: 'BCR-ABL1/ABL1 % (IS)', style: { fontFamily: "'Open Sans',Arial,sans-serif", color: '#666', fontSize: '12px' } },
+      gridLineColor: '#E4E4E4',
+      labels: {
+        style: { fontFamily: "'Open Sans',Arial,sans-serif", color: '#333', fontSize: '12px' },
+        formatter: function() {
+          if (this.value >= 100)   return '≥100';
+          if (this.value <= 0.001) return '≤0.001';
+          return this.value;
+        },
+      },
+      plotLines: [
+        {
+          value: 0.1, color: '#999', dashStyle: 'ShortDash', width: 1, zIndex: 5,
+          label: { text: 'MMR - 0.1%', align: 'right', x: -4, style: { color: '#666', fontSize: '11px' } },
+        },
+        {
+          value: 0.003, color: '#999', dashStyle: 'ShortDash', width: 1, zIndex: 5,
+          label: { text: 'LOQ - 0.003%', align: 'right', x: -4, style: { color: '#666', fontSize: '11px' } },
+        },
+        {
+          value: 100, color: '#999', dashStyle: 'ShortDash', width: 1, zIndex: 5,
+          label: { text: 'P210', align: 'right', x: -4, style: { color: '#666', fontSize: '11px' } },
+        },
+      ],
+    },
+    tooltip: {
+      formatter: function() {
+        const info = _tooltipData.get(this.x) || {};
+        return '<b>' + this.x + '</b><br/>' +
+               'Patient ID: ' + (info.patientId || '—') + '<br/>' +
+               'Name: '       + (info.patientName || '—') + '<br/>' +
+               'DOB: '        + (info.dob || '—') + '<br/>' +
+               'Value: '      + this.y;
+      },
+    },
+  };
+
+  // ── BCR p190 ──────────────────────────────────────────────────────────────────
+  const ORIGINAL_P190 = [
+    { date: '01/05/2024', value: 0.008 },
+    { date: '06/05/2024', value: 0.015 },
+    { date: '11/04/2024', value: 0.004 },
+    { date: '04/05/2025', value: 0.18  },
+    { date: '09/04/2025', value: 0.06  },
+    { date: '02/03/2026', value: 0.02  },
+  ];
+  const P190_OPTS = {
+    yAxis: {
+      type: 'logarithmic',
+      min: 0.001,
+      max: 100,
+      tickPositions: [0.001, 0.01, 0.1, 1, 10, 100],
+      title: { text: 'BCR-ABL1/ABL1 % (IS)', style: { fontFamily: "'Open Sans',Arial,sans-serif", color: '#666', fontSize: '12px' } },
+      gridLineColor: '#E4E4E4',
+      labels: {
+        style: { fontFamily: "'Open Sans',Arial,sans-serif", color: '#333', fontSize: '12px' },
+        formatter: function() {
+          if (this.value >= 100)   return '≥100';
+          if (this.value <= 0.001) return '≤0.001';
+          return this.value;
+        },
+      },
+      plotLines: [
+        { value: 0.1,   color: '#999', dashStyle: 'ShortDash', width: 1, zIndex: 5, label: { text: 'MMR - 0.1%',   align: 'right', x: -4, style: { color: '#666', fontSize: '11px' } } },
+        { value: 0.003, color: '#999', dashStyle: 'ShortDash', width: 1, zIndex: 5, label: { text: 'LOQ - 0.003%', align: 'right', x: -4, style: { color: '#666', fontSize: '11px' } } },
+      ],
+    },
+    tooltip: {
+      formatter: function() {
+        const info = _tooltipData.get(this.x) || {};
+        return '<b>' + this.x + '</b><br/>' +
+               'Patient ID: ' + (info.patientId || '—') + '<br/>' +
+               'Name: '       + (info.patientName || '—') + '<br/>' +
+               'DOB: '        + (info.dob || '—') + '<br/>' +
+               'Value: '      + this.y;
+      },
+    },
+  };
+
+  const LBL_STYLE = 'font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;';
+
+  const mergedSeries = [];
+  const bcrBanner = document.getElementById('bcrabl-banner');
+  bcrBanner.setButtons([{ label: 'Patients suspected as duplicates', value: 'merge' }]);
+  bcrBanner.setExpandContent('<labos-box-selection-list item-width="calc((100% - 8px) / 2)"></labos-box-selection-list>');
+
+  function _initChartBoxes() {
+    const bsl = bcrBanner.shadowRoot.querySelector('labos-box-selection-list');
+    if (!bsl) return;
+    bsl.setItems([
+      { value: 'p210', html: '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:11px;font-weight:700;color:#888;letter-spacing:.06em">P210 trends graph</span><labos-checkbox label="Display on result report"></labos-checkbox></div><labos-line-chart height="220" legend="false"></labos-line-chart>' },
+      { value: 'p190', html: '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:11px;font-weight:700;color:#888;letter-spacing:.06em">P190 trends graph</span><labos-checkbox label="Display on result report" checked></labos-checkbox></div><labos-line-chart height="220" legend="false"></labos-line-chart>' },
+    ]);
+  }
+
+  function _getChartBoxes() {
+    const bsl = bcrBanner.shadowRoot.querySelector('labos-box-selection-list');
+    return bsl ? Array.from(bsl.shadowRoot.querySelectorAll('labos-line-chart')) : [];
+  }
+
+  function _parseDate(dmy) { const [d,m,y] = dmy.split('/'); return +new Date(+y, +m-1, +d); }
+
+  function _buildSeries(origPts, extraRows, name, color) {
+    const map = new Map(origPts.map(p => [p.date, { value: p.value, patientId: CURRENT_PATIENT.patientId, patientName: CURRENT_PATIENT.patientName, dob: CURRENT_PATIENT.dob }]));
+    extraRows.forEach(row => row.points.forEach(pt => {
+      if (!map.has(pt.date)) map.set(pt.date, { value: pt.value, patientId: row.patientId, patientName: row.name, dob: row.dob });
+    }));
+    map.forEach((info, date) => _tooltipData.set(date, info));
+    const sorted = [...map.entries()].sort((a, b) => _parseDate(a[0]) - _parseDate(b[0]));
+    return {
+      categories: sorted.map(([date]) => date),
+      series: [{ name, data: sorted.map(([, info]) => info.value), color }],
+    };
+  }
+
+  function _rebuildChart() {
+    const charts = _getChartBoxes();
+    if (!charts.length) return;
+    const p210 = _buildSeries(ORIGINAL_P210, mergedSeries, 'Sample #2024-001', '#265F68');
+    const p190 = _buildSeries(ORIGINAL_P190, [],           'Sample #2024-001', '#265F68');
+    if (charts[0]) charts[0].setData(p210.series, p210.categories, CHART_OPTS);
+    if (charts[1]) charts[1].setData(p190.series, p190.categories, P190_OPTS);
+  }
+
+  bcrBanner.addEventListener('labos-expand', e => {
+    if (e.detail.expanded) { _initChartBoxes(); _rebuildChart(); }
+  });
+
+  // ── Merge patients dialog ──────────────────────────────────────────────────
+  const MERGE_COLORS = ['#5ABA47', '#1773E0', '#FFA500', '#C040B0'];
+
+  const DUPLICATE_CANDIDATES = [
+    { patientId: 'P-1042', name: 'David Cohen',  dob: '12/03/1956', sex: 'M', address: '14 Herzl St, Tel Aviv',        phone: '050-123-4567', lastTest: '10/02/2025', matchPct: '94%',
+      points: [ { date: '20/09/2023', value: 0.42 }, { date: '15/01/2024', value: 0.18 }, { date: '22/08/2024', value: 0.025 }, { date: '10/02/2025', value: 0.08 } ] },
+    { patientId: 'P-2891', name: 'David Kohen',  dob: '12/03/1956', sex: 'M', address: '8 Balfour St, Tel Aviv',       phone: '050-234-5678', lastTest: '05/04/2024', matchPct: '87%',
+      points: [ { date: '12/11/2023', value: 0.65 }, { date: '05/04/2024', value: 0.30 } ] },
+    { patientId: 'P-0317', name: 'D. Cohen',     dob: '11/03/1956', sex: 'M', address: '32 Ben Gurion Blvd, Haifa',   phone: '054-345-6789', lastTest: '07/10/2025', matchPct: '79%',
+      points: [ { date: '18/06/2024', value: 0.055 }, { date: '07/10/2025', value: 0.012 } ] },
+  ];
+
+  const MERGE_COLS = [
+    { field: 'patientId', label: 'Patient ID' },
+    { field: 'name',      label: 'Name' },
+    { field: 'dob',       label: 'Date of birth' },
+    { field: 'sex',       label: 'Sex' },
+    { field: 'address',   label: 'Address' },
+    { field: 'phone',     label: 'Phone' },
+    {
+      field: 'matchPct', label: 'Match level',
+      render: v => {
+        const pct = parseInt(v);
+        if (pct >= 90) return `<labos-badge label="High"   bg="var(--green-lighten-45)" variant="bright"></labos-badge>`;
+        return              `<labos-badge label="Medium" bg="var(--blue-lighten-45)"  variant="bright"></labos-badge>`;
+      },
+    },
+  ];
+
+  const mergeGrid   = document.getElementById('merge-grid');
+  const mergeDialog = document.getElementById('dialog-merge');
+  const btnDoMerge  = document.getElementById('btn-do-merge');
+
+  mergeGrid.setData(MERGE_COLS, DUPLICATE_CANDIDATES);
+
+  bcrBanner.addEventListener('labos-action', e => {
+    if (e.detail.value === 'merge') mergeDialog.show();
+  });
+
+  mergeDialog.addEventListener('labos-close', () => {
+    mergeDialog.removeAttribute('open');
+  });
+
+  mergeGrid.addEventListener('labos-selection-change', e => {
+    btnDoMerge.toggleAttribute('disabled', e.detail.indices.size === 0);
+  });
+
+  btnDoMerge.addEventListener('click', () => {
+    const indices = [...(mergeGrid.getSelection?.() || mergeGrid._selected || [])];
+    const selectedRows = indices.map(i => DUPLICATE_CANDIDATES[i]).filter(Boolean);
+    mergedSeries.length = 0;
+    selectedRows.forEach(row => mergedSeries.push(row));
+    _rebuildChart();
+    mergeDialog.removeAttribute('open');
+  });
+</script>
+
+<script>
+  (function() {
+    var s = document.getElementById('splash');
+    var isReload = (performance.getEntriesByType('navigation')[0] || {}).type === 'reload';
+    var fromNav  = sessionStorage.getItem('labos_nav') === '1';
+    sessionStorage.removeItem('labos_nav');
+    if (!isReload && fromNav) { s.remove(); return; }
+    var h = new Date().getHours();
+    var g = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+    var parts = (document.querySelector('labos-navbar')?.getAttribute('user-name') || '').trim().split(/\s+/);
+    var first = /^(Dr\.|Prof\.|Mr\.|Mrs\.|Ms\.)$/i.test(parts[0]) ? (parts[1] || '') : (parts[0] || '');
+    document.getElementById('splash-greeting').textContent = first ? g + ', ' + first : g;
+    setTimeout(function() {
+      s.classList.add('fade-out');
+      s.addEventListener('transitionend', function() { s.remove(); }, { once: true });
+    }, 3000);
+  })();
+</script>
+
+<script>
+  document.getElementById('patient-bar').setPatient({
+    name: 'David Cohen', gender: 'M', idNo: '123-456-789-01',
+    dob: '12/03/1956', age: '70Y', phone: '050-123-4567',
+    labNo: 'LAB-2892', firstName: 'David', lastName: 'Cohen',
+    address: '14 Herzl St', city: 'Tel Aviv', zip: '6578901', country: 'Israel',
+    mobile: '052-987-6543', status: 'Active',
+  });
+</script>
+
+<script>
+  document.addEventListener('click', function(e) {
+    var path = e.composedPath ? e.composedPath() : [];
+    var a = path.find(function(el) { return el.tagName === 'A' && el.href && !el.target; });
+    if (a && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+      sessionStorage.setItem('labos_nav', '1');
+    }
+  }, true);
+</script>
+
+
+</body>
+</html>

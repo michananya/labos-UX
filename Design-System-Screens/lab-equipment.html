@@ -1,0 +1,614 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab Equipment — LabOS</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<script src="../shared/labos-components.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+    background: var(--screen-bg, #ffffff);
+    color: #333;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  :root {
+    --primary:      #265F68;
+    --primary-dark: #1F5156;
+    --primary-20:   #D5E0E1;
+    --warn:         #D20000;
+    --warn-hover:   #B90000;
+    --surface:      #F5F5F5;
+    --white:        #ffffff;
+    --disabled-op:  0.4;
+    --transition:   background 150ms ease, opacity 150ms ease,
+                    border-color 150ms ease, box-shadow 150ms ease;
+  }
+
+  labos-navbar { flex-shrink: 0; }
+
+  /* ── SCREEN BODY ── */
+  .screen-body {
+    flex: 1; overflow-y: auto;
+    display: flex; flex-direction: column;
+  }
+
+  /* ── TOP AREA ── */
+  .screen-top { padding: 16px 16px 0; flex-shrink: 0; }
+
+  /* ── SEARCH ZONE ── */
+  .search-zone {
+    display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0;
+  }
+  .search-autocomplete-wrap { width: 300px; flex-shrink: 0; }
+  #btn-view-toggle { margin-left: auto; }
+
+  /* ── ACTION BAR ── */
+  .action-bar {
+    display: flex; align-items: center; gap: 10px;
+    height: 36px; margin-top: 16px; flex-shrink: 0;
+  }
+
+  /* ── GRID ── */
+  labos-grid {
+    margin: 0 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── SPLIT VIEW ── */
+  #master-list { display: none; }
+
+  /* ── Dialog styles ── */
+  .form-row { display: flex; gap: 10px; align-items: flex-end; }
+  .form-row labos-input,
+  .form-row labos-select,
+  .form-row labos-autocomplete { flex: 1; min-width: 0; }
+  .delete-warn { color: #D20000; font-weight: 600; margin-top: 8px; }
+
+  /* ── Advanced Search Dialog ── */
+  .adv-search-box {
+    display: flex; flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  .adv-search-options {
+    display: flex; align-items: center; gap: 32px;
+    flex-shrink: 0;
+  }
+  .adv-search-option-group {
+    display: flex; align-items: center; gap: 16px;
+  }
+  .adv-search-option-group__label {
+    font-size: 14px; font-weight: 600; color: #444;
+  }
+  .adv-search-option-group labos-chip-list { flex-shrink: 0; }
+
+  #adv-grid { flex: 1; min-height: 0; margin: 16px 0 0; }
+  /* ── Splash screen ── */
+  #splash {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.6s ease;
+    --draw-speed: 0.75;
+  }
+  #splash.fade-out { opacity: 0; pointer-events: none; }
+  #splash svg { width: 300px; }
+  #splash .greeting {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 18px; font-weight: 300; color: #333;
+    margin-top: 28px; opacity: 0;
+    animation: splashGreeting 0.8s ease 0.7s both;
+  }
+  @keyframes splashGreeting {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+<div id="splash"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 716.95 164.92">
+  <defs><style>
+    .cls-1,.cls-2{stroke:#333}.cls-1,.cls-2,.cls-3{fill:none;stroke-linecap:round;stroke-width:17px}.cls-1,.cls-3{stroke-linejoin:round}.cls-2{stroke-miterlimit:10}.cls-3{stroke:#00b08a}
+    .draw{stroke-dasharray:1;stroke-dashoffset:1}.draw-rev{stroke-dasharray:1;stroke-dashoffset:-1}
+    @keyframes draw{to{stroke-dashoffset:0}}
+    @keyframes breathe{0%,100%{stroke-opacity:1}50%{stroke-opacity:.72}}
+    .el-cloud{animation:draw calc(.85s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.05s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-divider{animation:draw calc(.3s * var(--draw-speed,1)) ease-out calc(.55s * var(--draw-speed,1)) both}
+    .el-note-r{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-note-l{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-circle{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.1s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-s{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.6s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+  </style></defs>
+  <g>
+    <path pathLength="1" class="cls-3 draw-rev el-cloud" d="M195.39,156.4H49.82s-41.32,1.93-41.32-38.95c0-37.37,38.71-40.71,38.71-40.71,0,0,.91-22.5,19.57-32.15,19.12-9.89,34.43.18,34.43.18,0,0,5.03-24.98,37.85-34.19,31.93-8.97,56.33,14.04,56.33,14.04"/>
+    <line pathLength="1" class="cls-1 draw el-divider" x1="222.66" y1="8.5" x2="222.66" y2="156.42"/>
+    <path pathLength="1" class="cls-2 draw el-note-r" d="M394.68,70.21c5.37-2.28,11.28-3.53,17.48-3.53,24.78,0,44.87,20.09,44.87,44.87s-20.09,44.87-44.87,44.87-44.87-20.09-44.87-44.87V9.06"/>
+    <path pathLength="1" class="cls-2 draw el-note-l" d="M312.94,152.26c-5.37,2.28-11.28,3.53-17.48,3.53-24.78,0-44.87-20.09-44.87-44.87,0-24.78,20.09-44.87,44.87-44.87s44.87,20.09,44.87,44.87c0,6.2,0,45.49,0,45.49"/>
+    <circle pathLength="1" class="cls-3 draw el-circle" cx="546.26" cy="92.48" r="63.94"/>
+    <path pathLength="1" class="cls-3 draw el-s" d="M636.41,136.15s7.35,20.27,36.3,20.27c28.96,0,35.74-23.88,35.74-30.88,0-11.32-2.39-25.63-36.02-33.02-33.63-7.4-36.02-22.98-36.02-33.02,0-7,6.78-30.88,35.74-30.88s36.3,20.27,36.3,20.27"/>
+  </g>
+</svg>
+<p id="splash-greeting" class="greeting"></p>
+</div>
+
+<!-- ── NAVBAR ── -->
+<labos-navbar
+  id="navbar"
+  breadcrumbs='[{"label":"Admin"},{"label":"Lab Equipment"}]'
+  user-name="John Smith"
+  user-org="LabOS laboratory">
+</labos-navbar>
+
+<!-- ── SCREEN BODY ── -->
+<main class="screen-body">
+
+  <div class="screen-top">
+    <div class="search-zone">
+      <div class="search-autocomplete-wrap">
+        <labos-rounded-search id="equipment-search" placeholder="Search equipment…" action-icon="search"></labos-rounded-search>
+      </div>
+      <labos-button shape="rounded" icon="add" title="Add Equipment" onclick="openDialog('dialog-add')"></labos-button>
+      <labos-button id="btn-view-toggle" shape="rounded" icon="vertical_split" title="Toggle view"></labos-button>
+    </div>
+
+    <div class="action-bar">
+      <labos-button id="btn-edit"   variant="default" icon="edit"   onclick="requireSelection('dialog-edit')">Edit</labos-button>
+      <labos-button id="btn-delete" variant="default" icon="delete" onclick="requireSelection('dialog-delete')">Delete</labos-button>
+      <labos-split-button id="btn-service" label="Set as Out of Service" icon="build_circle" variant="default"></labos-split-button>
+    </div>
+  </div>
+
+  <labos-grid id="grid" title="Lab Equipment" mode="infinity-scroll"></labos-grid>
+
+  <labos-master-list id="master-list"></labos-master-list>
+
+</main>
+
+<!-- DIALOG — Add Equipment -->
+<labos-dialog id="dialog-add" title="Add Equipment">
+  <div class="form-row">
+    <labos-input       id="add-name"         placeholder="Equipment Name" style="flex:2" mandatory></labos-input>
+    <labos-select      id="add-type"         placeholder="Type"           style="flex:1"></labos-select>
+  </div>
+  <div class="form-row">
+    <labos-input       id="add-manufacturer" placeholder="Manufacturer"></labos-input>
+    <labos-input       id="add-model"        placeholder="Model"></labos-input>
+  </div>
+  <div class="form-row">
+    <labos-input       id="add-serial"       placeholder="Serial #"></labos-input>
+    <labos-autocomplete id="add-dept"        placeholder="Department"></labos-autocomplete>
+  </div>
+  <labos-input         id="add-calibration"  placeholder="Last Calibration" type="date"></labos-input>
+  <labos-button slot="footer" variant="default" cancel icon="close" onclick="closeDialog('dialog-add')">Cancel</labos-button>
+  <labos-button slot="footer" variant="accent" icon="check" onclick="saveAddEquipment()">Save</labos-button>
+</labos-dialog>
+
+<!-- DIALOG — Edit Equipment -->
+<labos-dialog id="dialog-edit" title="Edit Equipment">
+  <div class="form-row">
+    <labos-input        id="edit-name"         placeholder="Equipment Name" style="flex:2" mandatory></labos-input>
+    <labos-select       id="edit-type"         placeholder="Type"           style="flex:1"></labos-select>
+  </div>
+  <div class="form-row">
+    <labos-input        id="edit-manufacturer" placeholder="Manufacturer"></labos-input>
+    <labos-input        id="edit-model"        placeholder="Model"></labos-input>
+  </div>
+  <div class="form-row">
+    <labos-input        id="edit-serial"       placeholder="Serial #"></labos-input>
+    <labos-autocomplete id="edit-dept"         placeholder="Department"></labos-autocomplete>
+  </div>
+  <labos-input          id="edit-calibration"  placeholder="Last Calibration" type="date"></labos-input>
+  <labos-button slot="footer" variant="default" cancel icon="close" onclick="closeDialog('dialog-edit')">Cancel</labos-button>
+  <labos-button slot="footer" variant="accent" icon="check" onclick="saveEditEquipment()">Save Changes</labos-button>
+</labos-dialog>
+
+<!-- DIALOG — Confirm Delete -->
+<labos-dialog id="dialog-delete" title="Delete Equipment" type="confirm">
+  <p>Are you sure you want to delete the selected equipment?</p>
+  <p class="delete-warn">This action cannot be undone.</p>
+  <labos-button slot="footer" variant="default" cancel icon="close" onclick="closeDialog('dialog-delete')">Cancel</labos-button>
+  <labos-button slot="footer" variant="warn" icon="delete" onclick="confirmDelete()">Delete equipment</labos-button>
+</labos-dialog>
+
+<!-- DIALOG — Confirm Set as Out of Service -->
+<labos-dialog id="dialog-out-of-service" title="Set as Out of Service" type="confirm">
+  <p>Are you sure you want to set the selected equipment as out of service?</p>
+  <p style="margin-top:8px;color:#757575;font-size:13px">Out-of-service equipment will be grayed out in the list.</p>
+  <labos-button slot="footer" variant="default" cancel icon="close" onclick="closeDialog('dialog-out-of-service')">Cancel</labos-button>
+  <labos-button slot="footer" variant="warn" icon="build_circle" onclick="confirmSetOutOfService()">Set as Out of Service</labos-button>
+</labos-dialog>
+
+<!-- DIALOG — Confirm Set as Active -->
+<labos-dialog id="dialog-active" title="Set as Active" type="confirm">
+  <p>Are you sure you want to set the selected equipment as active?</p>
+  <p style="margin-top:8px;color:#757575;font-size:13px">Active equipment will appear normally in the list.</p>
+  <labos-button slot="footer" variant="default" cancel icon="close" onclick="closeDialog('dialog-active')">Cancel</labos-button>
+  <labos-button slot="footer" variant="primary" icon="check_circle" onclick="confirmSetActive()">Set as Active</labos-button>
+</labos-dialog>
+
+<!-- DIALOG — Advanced Search -->
+<labos-dialog id="dialog-adv-search" title="Advanced Search" size="xl" fixed-height>
+  <div class="adv-search-box">
+    <labos-input id="adv-search-input" placeholder="Search equipment…" style="width:50%"></labos-input>
+    <div class="adv-search-options">
+    <div class="adv-search-option-group">
+      <span class="adv-search-option-group__label">Search method:</span>
+      <labos-chip-list id="adv-chip-method" mode="single" size="small"></labos-chip-list>
+    </div>
+    <div class="adv-search-option-group">
+      <span class="adv-search-option-group__label">Sort by:</span>
+      <labos-chip-list id="adv-chip-sort" mode="single" size="small"></labos-chip-list>
+    </div>
+    </div>
+  </div>
+  <labos-grid id="adv-grid" title="Items" mode="infinity-scroll"></labos-grid>
+  <labos-button slot="footer" variant="default" cancel icon="close" onclick="closeDialog('dialog-adv-search')">Cancel</labos-button>
+  <labos-button slot="footer" variant="accent" icon="check" id="btn-adv-select">Select</labos-button>
+</labos-dialog>
+
+<!-- ALERT — No selection -->
+
+<script>
+  // ── Data ──────────────────────────────────────────────────────
+  const COLUMNS = [
+    { field: 'name',          label: 'Equipment Name' },
+    { field: 'type',          label: 'Type' },
+    { field: 'serial',        label: 'Serial #' },
+    { field: 'manufacturer',  label: 'Manufacturer' },
+    { field: 'department',    label: 'Department' },
+    { field: 'lastCalibration', label: 'Last Calibration' },
+  ];
+
+  const ALL_ROWS = [
+    { name: 'Hematology Analyzer XE-2100', type: 'Analyzer',         serial: 'SN-2024-001', manufacturer: 'Sysmex',         model: 'XE-2100',       department: 'Hematology',        lastCalibration: '2026-03-15' },
+    { name: 'Centrifuge 5810 R',           type: 'Centrifuge',        serial: 'SN-2024-002', manufacturer: 'Eppendorf',       model: '5810 R',        department: 'Biochemistry',      lastCalibration: '2026-04-01' },
+    { name: 'Inverted Microscope CKX53',   type: 'Microscope',        serial: 'SN-2024-003', manufacturer: 'Olympus',         model: 'CKX53',         department: 'Microbiology',      lastCalibration: '2026-02-20' },
+    { name: 'CO2 Incubator Heracell 150i', type: 'Incubator',         serial: 'SN-2024-004', manufacturer: 'Thermo Fisher',   model: 'Heracell 150i', department: 'Cell Culture',      lastCalibration: '2026-03-28' },
+    { name: 'PCR Thermocycler T100',       type: 'PCR',               serial: 'SN-2024-005', manufacturer: 'Bio-Rad',         model: 'T100',          department: 'Molecular Biology', lastCalibration: '2026-04-10' },
+    { name: 'NanoDrop One Spectrophotometer', type: 'Spectrophotometer', serial: 'SN-2024-006', manufacturer: 'Thermo Fisher', model: 'NanoDrop One', department: 'Biochemistry',      lastCalibration: '2025-12-15', inactive: true },
+    { name: 'Autoclave 2340M',             type: 'Sterilizer',        serial: 'SN-2024-007', manufacturer: 'Tuttnauer',       model: '2340M',         department: 'Sterilization',     lastCalibration: '2026-04-05' },
+    { name: 'FACSCanto II Flow Cytometer', type: 'Flow Cytometer',    serial: 'SN-2024-008', manufacturer: 'BD Biosciences',  model: 'FACSCanto II',  department: 'Immunology',        lastCalibration: '2026-01-30', inactive: true },
+  ];
+
+  let currentRows            = [...ALL_ROWS];
+  let isSplitView            = false;
+  let masterSelection        = [];
+  let masterSelectionIndices = [];
+  let gridSelectionIndices   = [];
+
+  const grid       = document.getElementById('grid');
+  const masterList = document.getElementById('master-list');
+
+  grid.setData(COLUMNS, currentRows);
+
+  // ── Equipment Type & Department options ───────────────────────
+  const EQUIP_TYPE_OPTIONS = [
+    'Analyzer', 'Centrifuge', 'Flow Cytometer', 'Incubator',
+    'Microscope', 'PCR', 'Spectrophotometer', 'Sterilizer', 'Other',
+  ].map(s => ({ label: s, value: s }));
+
+  const EQUIP_DEPT_OPTIONS = [
+    'Biochemistry', 'Cell Culture', 'Genetics', 'Hematology',
+    'Immunology', 'Microbiology', 'Molecular Biology',
+    'Pathology', 'Radiology', 'Sterilization',
+  ].map(s => ({ label: s, value: s }));
+
+  document.getElementById('add-type').setOptions(EQUIP_TYPE_OPTIONS);
+  document.getElementById('edit-type').setOptions(EQUIP_TYPE_OPTIONS);
+  document.getElementById('add-dept').setOptions(EQUIP_DEPT_OPTIONS);
+  document.getElementById('edit-dept').setOptions(EQUIP_DEPT_OPTIONS);
+
+  // ── Search ────────────────────────────────────────────────────
+  document.getElementById('equipment-search').setOptions(
+    ALL_ROWS.map((r, i) => ({
+      label: r.name,
+      row2:  r.type,
+      row3:  r.manufacturer,
+      value: i,
+    }))
+  );
+  document.getElementById('equipment-search').addEventListener('labos-select', e => {
+    console.log('Navigate to equipment:', e.detail);
+  });
+
+  // ── View toggle ───────────────────────────────────────────────
+  const viewToggleBtn = document.getElementById('btn-view-toggle');
+
+  viewToggleBtn.addEventListener('click', () => {
+    isSplitView = !isSplitView;
+    if (isSplitView) {
+      viewToggleBtn.setAttribute('icon', 'view_headline');
+      grid.style.display = 'none';
+      masterList.style.display = 'flex';
+      const selIdx = gridSelectionIndices.length > 0 ? gridSelectionIndices : [0];
+      syncMasterList(selIdx);
+      masterList.setFocus(selIdx[0]);
+      masterSelection        = masterList.selectedRows;
+      masterSelectionIndices = [...selIdx];
+      _updateDetailPanel();
+    } else {
+      viewToggleBtn.setAttribute('icon', 'vertical_split');
+      masterList.style.display = 'none';
+      grid.style.display = '';
+      grid.setData(COLUMNS, currentRows);
+      if (masterSelectionIndices.length > 0) {
+        grid.setSelection(masterSelectionIndices);
+      }
+      gridSelectionIndices = [...masterSelectionIndices];
+    }
+  });
+
+  function syncMasterList(selectedIndices = []) {
+    const selSet = new Set(selectedIndices);
+    masterList.setData(currentRows.map((r, i) => ({
+      row1:     r.name,
+      row2:     r.type,
+      row3:     r.manufacturer,
+      selected: selSet.has(i),
+      inactive: r.inactive,
+    })));
+  }
+
+  function _updateDetailPanel() {
+    const dp = masterList.detailPanel;
+    if (!dp) return;
+    if (masterSelection.length === 0) {
+      dp.innerHTML = '<p class="detail-empty">Select equipment to view details</p>';
+      return;
+    }
+    const idx           = masterSelectionIndices[0];
+    const r             = currentRows[idx];
+    const statusVariant = r.inactive ? 'neutral-l' : 'accent-l';
+    const statusLabel   = r.inactive ? 'Out of Service' : 'Active';
+    dp.innerHTML = `
+      <div class="item-identity">
+        <span class="item-title">${r.name}</span>
+        <labos-badge variant="${statusVariant}">${statusLabel}</labos-badge>
+      </div>
+      <div class="item-actions">
+        <labos-button variant="default" icon="edit" onclick="requireSelection('dialog-edit')">Edit</labos-button>
+        <labos-button variant="default" icon="delete" onclick="requireSelection('dialog-delete')">Delete</labos-button>
+      </div>
+      <div class="detail-content">
+        <div class="detail-meta">
+          <div class="detail-field"><span class="detail-label">Type</span><span class="detail-value">${r.type}</span></div>
+          <div class="detail-field"><span class="detail-label">Manufacturer</span><span class="detail-value">${r.manufacturer}</span></div>
+          <div class="detail-field"><span class="detail-label">Model</span><span class="detail-value">${r.model}</span></div>
+          <div class="detail-field"><span class="detail-label">Serial #</span><span class="detail-value">${r.serial}</span></div>
+          <div class="detail-field"><span class="detail-label">Department</span><span class="detail-value">${r.department}</span></div>
+          <div class="detail-field"><span class="detail-label">Last Calibration</span><span class="detail-value">${r.lastCalibration}</span></div>
+        </div>
+      </div>`;
+  }
+
+  // ── Master-list selection ─────────────────────────────────────
+  masterList.addEventListener('labos-selection-change', e => {
+    masterSelection        = e.detail.selected;
+    masterSelectionIndices = [...e.detail.indices].sort((a, b) => a - b);
+    _updateDetailPanel();
+  });
+
+  // ── Grid selection ────────────────────────────────────────────
+  grid.addEventListener('labos-selection-change', e => {
+    gridSelectionIndices = [...e.detail.indices].sort((a, b) => a - b);
+    if (e.detail.indices.length > 0) {
+      const r = currentRows[e.detail.indices[0]];
+      document.getElementById('edit-name').value         = r.name;
+      document.getElementById('edit-type').value         = r.type;
+      document.getElementById('edit-manufacturer').value = r.manufacturer;
+      document.getElementById('edit-model').value        = r.model;
+      document.getElementById('edit-serial').value       = r.serial;
+      document.getElementById('edit-dept').value         = r.department;
+      document.getElementById('edit-calibration').value  = r.lastCalibration;
+    }
+  });
+
+  // ── Dialogs ───────────────────────────────────────────────────
+  function openDialog(id)  { document.getElementById(id).show(); }
+  function closeDialog(id) { document.getElementById(id).hide(); }
+
+  function validateMandatory(fieldIds) {
+    let firstEmpty = null;
+    fieldIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (!el.value) {
+        el.setAttribute('invalid', '');
+        if (!firstEmpty) firstEmpty = el;
+      } else {
+        el.removeAttribute('invalid');
+      }
+    });
+    if (firstEmpty) { firstEmpty.focus(); return false; }
+    return true;
+  }
+
+  function saveAddEquipment() {
+    if (!validateMandatory(['add-name'])) return;
+    closeDialog('dialog-add');
+  }
+
+  function saveEditEquipment() {
+    if (!validateMandatory(['edit-name'])) return;
+    closeDialog('dialog-edit');
+  }
+
+  function requireSelection(dialogId) {
+    const selected = isSplitView ? masterSelection : grid.selectedRows;
+    if (selected.length === 0) {
+      openDialog('dialog-no-selection');
+      return;
+    }
+    openDialog(dialogId);
+  }
+
+  function confirmDelete() {
+    const indices = isSplitView ? masterSelectionIndices : gridSelectionIndices;
+    currentRows = currentRows.filter((_, i) => !indices.includes(i));
+    closeDialog('dialog-delete');
+    if (isSplitView) {
+      syncMasterList([]);
+      masterSelection = []; masterSelectionIndices = [];
+      _updateDetailPanel();
+    } else {
+      grid.setData(COLUMNS, currentRows);
+      gridSelectionIndices = [];
+    }
+  }
+
+  // ── Out of Service / Active split button ──────────────────────
+  const btnService = document.getElementById('btn-service');
+  btnService.setItems([
+    { label: 'Set as Active', value: 'active' },
+  ]);
+  btnService.addEventListener('labos-action', () => requireSelection('dialog-out-of-service'));
+  btnService.addEventListener('labos-select', e => {
+    if (e.detail.value === 'active') requireSelection('dialog-active');
+  });
+
+  function confirmSetOutOfService() {
+    const indices = isSplitView ? masterSelectionIndices : gridSelectionIndices;
+    indices.forEach(i => { currentRows[i].inactive = true; });
+    closeDialog('dialog-out-of-service');
+    if (isSplitView) {
+      syncMasterList([]);
+      masterSelection = []; masterSelectionIndices = [];
+      _updateDetailPanel();
+    } else {
+      grid.setData(COLUMNS, currentRows);
+      gridSelectionIndices = [];
+    }
+  }
+
+  function confirmSetActive() {
+    const indices = isSplitView ? masterSelectionIndices : gridSelectionIndices;
+    indices.forEach(i => { currentRows[i].inactive = false; });
+    closeDialog('dialog-active');
+    if (isSplitView) {
+      syncMasterList([]);
+      masterSelection = []; masterSelectionIndices = [];
+      _updateDetailPanel();
+    } else {
+      grid.setData(COLUMNS, currentRows);
+      gridSelectionIndices = [];
+    }
+  }
+
+  // ── Advanced Search ───────────────────────────────────────────
+  const ADV_COLUMNS = [
+    { field: 'name',         label: 'Name' },
+    { field: 'type',         label: 'Type' },
+    { field: 'serial',       label: 'Serial #' },
+    { field: 'department',   label: 'Department' },
+    { field: 'manufacturer', label: 'Manufacturer' },
+    { field: 'active',       label: 'Active', render: v => v ? '<span class="material-icons" style="font-size:16px;color:#265F68;vertical-align:middle">check</span>' : '' },
+  ];
+
+  document.getElementById('adv-chip-method').setItems([
+    { label: 'Contains', value: 'contains', selected: true },
+    { label: 'Prefix',   value: 'prefix' },
+    { label: 'Soundex',  value: 'soundex' },
+  ]);
+  document.getElementById('adv-chip-sort').setItems([
+    { label: 'Name',     value: 'name',   selected: true },
+    { label: 'Serial #', value: 'serial' },
+  ]);
+
+  const advGrid = document.getElementById('adv-grid');
+  advGrid.setData(ADV_COLUMNS, []);
+
+  let advSelectedIndex = -1;
+
+  advGrid.addEventListener('labos-selection-change', e => {
+    advSelectedIndex = e.detail.indices.length > 0
+      ? (e.detail.selected[0]._origIdx ?? e.detail.indices[0])
+      : -1;
+  });
+
+  document.getElementById('equipment-search').addEventListener('labos-action', () => {
+    advSelectedIndex = -1;
+    _advRenderTable(ALL_ROWS.map((r, i) => ({ ...r, _origIdx: i })));
+    openDialog('dialog-adv-search');
+  });
+
+  function _advGetRows() {
+    const q      = document.getElementById('adv-search-input').value.trim().toLowerCase();
+    const method = document.getElementById('adv-chip-method').items.find(i => i.selected)?.value || 'contains';
+    const sortBy = document.getElementById('adv-chip-sort').items.find(i => i.selected)?.value || 'name';
+
+    let rows = ALL_ROWS.map((r, i) => ({ ...r, _origIdx: i }));
+
+    if (q) {
+      rows = rows.filter(r => {
+        const target = (r.name + ' ' + r.type + ' ' + r.serial + ' ' + r.manufacturer).toLowerCase();
+        if (method === 'prefix')  return r.name.toLowerCase().startsWith(q);
+        if (method === 'soundex') return r.name.toLowerCase().startsWith(q[0] || '');
+        return target.includes(q);
+      });
+    }
+
+    rows.sort((a, b) => {
+      const ka = sortBy === 'serial' ? a.serial : a.name;
+      const kb = sortBy === 'serial' ? b.serial : b.name;
+      return ka.localeCompare(kb);
+    });
+
+    return rows;
+  }
+
+  function _advRenderTable(rows) {
+    advGrid.setData(ADV_COLUMNS, rows.map(r => ({ ...r, active: !r.inactive })));
+  }
+
+  function _advRefresh() { _advRenderTable(_advGetRows()); }
+
+  function _advConfirmSelect() {
+    if (advSelectedIndex < 0) return;
+    closeDialog('dialog-adv-search');
+    grid.setSelection([advSelectedIndex]);
+    gridSelectionIndices = [advSelectedIndex];
+  }
+
+  document.getElementById('btn-adv-select').addEventListener('click', _advConfirmSelect);
+  document.getElementById('adv-search-input').addEventListener('labos-input', _advRefresh);
+  document.querySelectorAll('labos-radio[name="adv-method"], labos-radio[name="adv-sort"]').forEach(r => {
+    r.addEventListener('labos-change', _advRefresh);
+  });
+</script>
+<script>
+  (function() {
+    var s = document.getElementById('splash');
+    var h = new Date().getHours();
+    var g = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+    var parts = (document.querySelector('labos-navbar')?.getAttribute('user-name') || '').trim().split(/\s+/);
+    var first = /^(Dr\.|Prof\.|Mr\.|Mrs\.|Ms\.)$/i.test(parts[0]) ? (parts[1] || '') : (parts[0] || '');
+    document.getElementById('splash-greeting').textContent = first ? g + ', ' + first : g;
+    setTimeout(function() {
+      s.classList.add('fade-out');
+      s.addEventListener('transitionend', function() { s.remove(); }, { once: true });
+    }, 3000);
+  })();
+</script>
+
+<!-- DIALOG — No selection -->
+<labos-dialog id="dialog-no-selection" type="warning" title="Selection required">
+  <p style="font-size:14px;color:#333">Please select at least one item</p>
+  <labos-button slot="footer" variant="default" icon="check" onclick="closeDialog('dialog-no-selection')">OK</labos-button>
+</labos-dialog>
+</body>
+</html>

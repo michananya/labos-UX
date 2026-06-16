@@ -1,0 +1,384 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Management — LabOS</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<script src="../shared/labos-components.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+    background: var(--screen-bg, #ffffff);
+    color: #333;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  :root {
+    --primary:      #265F68;
+    --primary-dark: #1F5156;
+    --primary-20:   #D5E0E1;
+    --warn:         #D20000;
+    --warn-hover:   #B90000;
+    --surface:      #F5F5F5;
+    --white:        #ffffff;
+    --disabled-op:  0.4;
+    --transition:   background 150ms ease, opacity 150ms ease,
+                    border-color 150ms ease, box-shadow 150ms ease;
+  }
+
+  labos-navbar { flex-shrink: 0; }
+
+  /* ── SCREEN BODY ── */
+  .screen-body {
+    flex: 1; overflow-y: auto;
+    display: flex; flex-direction: column;
+  }
+
+  /* ── TOP AREA (search + action bar) ── */
+  .screen-top { padding: 16px 16px 0; flex-shrink: 0; }
+
+  /* ── SEARCH ZONE ── */
+  .search-zone {
+    display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0;
+  }
+  .search-autocomplete-wrap { width: 300px; flex-shrink: 0; }
+#btn-view-toggle { margin-left: auto; }
+
+  /* ── ACTION BAR ── */
+  .action-bar {
+    display: flex; align-items: center; gap: 10px;
+    height: 36px; margin-top: 16px; flex-shrink: 0;
+  }
+
+  /* ── GRID ── */
+  labos-grid {
+    margin: 0 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── SPLIT VIEW ── */
+  #split-view {
+    flex: 1; display: flex; margin-top: 12px; min-height: 0; overflow: hidden;
+  }
+  #split-view > labos-master-list { flex-shrink: 0; display: block; height: 100%; }
+  .detail-panel {
+    flex: 1; padding: 24px; background: #fff;
+    border-top: 1px solid #E4E4E4; overflow-y: auto;
+  }
+  .detail-name  { font-size: 20px; font-weight: 600; color: #333; }
+  .detail-empty { color: #999; font-size: 14px; }
+
+  /* ── Dialog body content styles (Light DOM) ── */
+  .form-row { display: flex; gap: 10px; align-items: flex-end; }
+  .form-row labos-input,
+  .form-row labos-select,
+  .form-row labos-autocomplete { flex: 1; min-width: 0; }
+  .delete-warn { color: #D20000; font-weight: 600; margin-top: 8px; }
+  /* ── Splash screen ── */
+  #splash {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.6s ease;
+    --draw-speed: 0.75;
+  }
+  #splash.fade-out { opacity: 0; pointer-events: none; }
+  #splash svg { width: 300px; }
+  #splash .greeting {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 18px; font-weight: 300; color: #333;
+    margin-top: 28px; opacity: 0;
+    animation: splashGreeting 0.8s ease 0.7s both;
+  }
+  @keyframes splashGreeting {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+<div id="splash"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 716.95 164.92">
+  <defs><style>
+    .cls-1,.cls-2{stroke:#333}.cls-1,.cls-2,.cls-3{fill:none;stroke-linecap:round;stroke-width:17px}.cls-1,.cls-3{stroke-linejoin:round}.cls-2{stroke-miterlimit:10}.cls-3{stroke:#00b08a}
+    .draw{stroke-dasharray:1;stroke-dashoffset:1}.draw-rev{stroke-dasharray:1;stroke-dashoffset:-1}
+    @keyframes draw{to{stroke-dashoffset:0}}
+    @keyframes breathe{0%,100%{stroke-opacity:1}50%{stroke-opacity:.72}}
+    .el-cloud{animation:draw calc(.85s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.05s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-divider{animation:draw calc(.3s * var(--draw-speed,1)) ease-out calc(.55s * var(--draw-speed,1)) both}
+    .el-note-r{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-note-l{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-circle{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.1s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-s{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.6s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+  </style></defs>
+  <g>
+    <path pathLength="1" class="cls-3 draw-rev el-cloud" d="M195.39,156.4H49.82s-41.32,1.93-41.32-38.95c0-37.37,38.71-40.71,38.71-40.71,0,0,.91-22.5,19.57-32.15,19.12-9.89,34.43.18,34.43.18,0,0,5.03-24.98,37.85-34.19,31.93-8.97,56.33,14.04,56.33,14.04"/>
+    <line pathLength="1" class="cls-1 draw el-divider" x1="222.66" y1="8.5" x2="222.66" y2="156.42"/>
+    <path pathLength="1" class="cls-2 draw el-note-r" d="M394.68,70.21c5.37-2.28,11.28-3.53,17.48-3.53,24.78,0,44.87,20.09,44.87,44.87s-20.09,44.87-44.87,44.87-44.87-20.09-44.87-44.87V9.06"/>
+    <path pathLength="1" class="cls-2 draw el-note-l" d="M312.94,152.26c-5.37,2.28-11.28,3.53-17.48,3.53-24.78,0-44.87-20.09-44.87-44.87,0-24.78,20.09-44.87,44.87-44.87s44.87,20.09,44.87,44.87c0,6.2,0,45.49,0,45.49"/>
+    <circle pathLength="1" class="cls-3 draw el-circle" cx="546.26" cy="92.48" r="63.94"/>
+    <path pathLength="1" class="cls-3 draw el-s" d="M636.41,136.15s7.35,20.27,36.3,20.27c28.96,0,35.74-23.88,35.74-30.88,0-11.32-2.39-25.63-36.02-33.02-33.63-7.4-36.02-22.98-36.02-33.02,0-7,6.78-30.88,35.74-30.88s36.3,20.27,36.3,20.27"/>
+  </g>
+</svg>
+<p id="splash-greeting" class="greeting"></p>
+</div>
+
+<!-- ── NAVBAR ── -->
+<labos-navbar
+  id="navbar"
+  breadcrumbs='[{"label":"Admin"},{"label":"User Management"}]'
+  user-name="John Smith"
+  user-org="LabOS laboratory">
+</labos-navbar>
+
+<!-- ── SCREEN BODY ── -->
+<main class="screen-body">
+
+  <div class="screen-top">
+    <div class="search-zone">
+      <div class="search-autocomplete-wrap">
+        <labos-rounded-search id="user-search" placeholder="Search users…"></labos-rounded-search>
+      </div>
+      <labos-button shape="rounded" icon="add" title="Add User" onclick="openDialog('dialog-add')"></labos-button>
+      <labos-button id="btn-view-toggle" shape="rounded" icon="vertical_split" title="Toggle view"></labos-button>
+    </div>
+
+    <div class="action-bar">
+      <labos-button id="btn-edit"   variant="default" icon="edit"   onclick="requireSelection('dialog-edit')">Edit</labos-button>
+      <labos-button id="btn-delete" variant="default" icon="delete" onclick="requireSelection('dialog-delete')">Delete</labos-button>
+    </div>
+  </div>
+
+  <labos-grid id="grid" title="Users" mode="infinity-scroll"></labos-grid>
+
+  <div id="split-view" style="display:none">
+    <labos-master-list id="master-list"></labos-master-list>
+    <div id="detail-panel" class="detail-panel">
+      <p class="detail-empty">Select an item to view details</p>
+    </div>
+  </div>
+
+</main>
+
+<!-- DIALOG — Add User -->
+<labos-dialog id="dialog-add" title="Add User">
+  <div class="form-row">
+    <labos-input id="add-fname" placeholder="First Name" mandatory></labos-input>
+    <labos-input id="add-lname" placeholder="Last Name"  mandatory></labos-input>
+  </div>
+  <labos-input  id="add-email" placeholder="Email" type="email"></labos-input>
+  <labos-select id="add-role"  placeholder="Role"></labos-select>
+  <labos-button slot="footer" variant="default" cancel icon="close" onclick="closeDialog('dialog-add')">Cancel</labos-button>
+  <labos-button slot="footer" variant="accent" icon="check" onclick="saveAddUser()">Save</labos-button>
+</labos-dialog>
+
+<!-- DIALOG — Edit User -->
+<labos-dialog id="dialog-edit" title="Edit User">
+  <div class="form-row">
+    <labos-input id="edit-fname" placeholder="First Name" mandatory></labos-input>
+    <labos-input id="edit-lname" placeholder="Last Name"  mandatory></labos-input>
+  </div>
+  <labos-input  id="edit-email" placeholder="Email" type="email"></labos-input>
+  <labos-select id="edit-role"  placeholder="Role"></labos-select>
+  <labos-button slot="footer" variant="default" cancel icon="close" onclick="closeDialog('dialog-edit')">Cancel</labos-button>
+  <labos-button slot="footer" variant="accent" icon="check" onclick="saveEditUser()">Save Changes</labos-button>
+</labos-dialog>
+
+<!-- DIALOG — Confirm Delete -->
+<labos-dialog id="dialog-delete" title="Delete User" type="confirm">
+  <p>Are you sure you want to delete the selected user(s)?</p>
+  <p class="delete-warn">This action cannot be undone.</p>
+  <labos-button slot="footer" variant="default" cancel icon="close" onclick="closeDialog('dialog-delete')">Cancel</labos-button>
+  <labos-button slot="footer" variant="warn" icon="delete">Delete user</labos-button>
+</labos-dialog>
+
+<!-- ALERT — No selection validation -->
+
+<script>
+  // ── Data ──────────────────────────────────────────────────────
+  const COLUMNS = [
+    { field: 'name',   label: 'Full Name' },
+    { field: 'email',  label: 'Email' },
+    { field: 'role',   label: 'Role',   render: (v) => `<span class="badge badge-${v.toLowerCase()}">${v}</span>` },
+    { field: 'status', label: 'Status' },
+  ];
+
+  const ALL_ROWS = [
+    { name: 'Alice Johnson', email: 'alice@example.com', role: 'Admin',  status: 'Active' },
+    { name: 'Bob Smith',     email: 'bob@example.com',   role: 'User',   status: 'Active' },
+    { name: 'Carol White',   email: 'carol@example.com', role: 'Viewer', status: 'Inactive' },
+    { name: 'David Lee',     email: 'david@example.com', role: 'User',   status: 'Active' },
+    { name: 'Eva Martinez',  email: 'eva@example.com',   role: 'Admin',  status: 'Active' },
+  ];
+
+  let currentRows            = [...ALL_ROWS];
+  let isSplitView            = false;
+  let masterSelection        = [];
+  let masterSelectionIndices = [];
+  let gridSelectionIndices   = [];
+
+  const grid        = document.getElementById('grid');
+  const masterList  = document.getElementById('master-list');
+  const splitView   = document.getElementById('split-view');
+  const detailPanel = document.getElementById('detail-panel');
+
+  grid.setData(COLUMNS, currentRows);
+
+  // ── Role select ───────────────────────────────────────────────
+  const ROLE_OPTIONS = [
+    { label: 'Admin',  value: 'Admin' },
+    { label: 'User',   value: 'User' },
+    { label: 'Viewer', value: 'Viewer' },
+  ];
+  document.getElementById('add-role').setOptions(ROLE_OPTIONS);
+  document.getElementById('edit-role').setOptions(ROLE_OPTIONS);
+
+  // ── Autocomplete ──────────────────────────────────────────────
+  document.getElementById('user-search').setOptions(
+    ALL_ROWS.map((r, i) => ({ label: r.name, row2: r.email, value: i }))
+  );
+  document.getElementById('user-search').addEventListener('labos-select', e => {
+    // TODO: navigate to user record
+    console.log('Navigate to user:', e.detail);
+  });
+
+  // ── View toggle ────────────────────────────────────────────────
+  const viewToggleBtn = document.getElementById('btn-view-toggle');
+
+  viewToggleBtn.addEventListener('click', () => {
+    isSplitView = !isSplitView;
+    if (isSplitView) {
+      // Grid → Split: carry selection; default to first row when nothing selected
+      viewToggleBtn.setAttribute('icon', 'view_headline');
+      grid.style.display = 'none';
+      splitView.style.display = 'flex';
+      const selIdx = gridSelectionIndices.length > 0 ? gridSelectionIndices : [0];
+      syncMasterList(selIdx);
+      masterList.setFocus(selIdx[0]);
+      masterSelection        = masterList.selectedRows;
+      masterSelectionIndices = [...selIdx];
+      _updateDetailPanel();
+    } else {
+      // Split → Grid: carry selection back; nothing selected if master was empty
+      viewToggleBtn.setAttribute('icon', 'vertical_split');
+      splitView.style.display = 'none';
+      grid.style.display = '';
+      grid.setData(COLUMNS, currentRows);
+      if (masterSelectionIndices.length > 0) {
+        grid.setSelection(masterSelectionIndices);
+      }
+      gridSelectionIndices = [...masterSelectionIndices];
+    }
+  });
+
+  function syncMasterList(selectedIndices = []) {
+    const selSet = new Set(selectedIndices);
+    masterList.setData(currentRows.map((r, i) => ({
+      row1:     r.name,
+      row2:     r.email,
+      row3:     r.role,
+      badge:    { text: r.status, variant: r.status === 'Active' ? 'accent-l' : 'neutral-l' },
+      selected: selSet.has(i),
+    })));
+  }
+
+  function _updateDetailPanel() {
+    detailPanel.innerHTML = masterSelection.length > 0
+      ? `<div class="detail-name">${masterSelection[0].row1}</div>`
+      : '<p class="detail-empty">Select an item to view details</p>';
+  }
+
+  // ── Master-list selection → detail panel ──────────────────────
+  masterList.addEventListener('labos-selection-change', e => {
+    masterSelection        = e.detail.selected;
+    masterSelectionIndices = [...e.detail.indices].sort((a, b) => a - b);
+    _updateDetailPanel();
+  });
+
+  // ── Grid selection → track indices + pre-fill edit dialog ─────
+  grid.addEventListener('labos-selection-change', e => {
+    gridSelectionIndices = [...e.detail.indices].sort((a, b) => a - b);
+    if (e.detail.indices.length > 0) {
+      const row   = e.detail.selected[0];
+      const parts = row.name.split(' ');
+      document.getElementById('edit-fname').value = parts[0] || '';
+      document.getElementById('edit-lname').value = parts.slice(1).join(' ') || '';
+      document.getElementById('edit-email').value = row.email;
+      document.getElementById('edit-role').value  = row.role;
+    }
+  });
+
+  // ── Dialogs ───────────────────────────────────────────────────
+  function openDialog(id)  { document.getElementById(id).show(); }
+  function closeDialog(id) { document.getElementById(id).hide(); }
+
+  function validateMandatory(fieldIds) {
+    let firstEmpty = null;
+    fieldIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (!el.value) {
+        el.setAttribute('invalid', '');
+        if (!firstEmpty) firstEmpty = el;
+      } else {
+        el.removeAttribute('invalid');
+      }
+    });
+    if (firstEmpty) { firstEmpty.focus(); return false; }
+    return true;
+  }
+
+  function saveAddUser() {
+    if (!validateMandatory(['add-fname', 'add-lname'])) return;
+    closeDialog('dialog-add');
+  }
+
+  function saveEditUser() {
+    if (!validateMandatory(['edit-fname', 'edit-lname'])) return;
+    closeDialog('dialog-edit');
+  }
+
+  function requireSelection(dialogId) {
+    const selected = isSplitView ? masterSelection : grid.selectedRows;
+    if (selected.length === 0) {
+      openDialog('dialog-no-selection');
+      return;
+    }
+    openDialog(dialogId);
+  }
+
+</script>
+<script>
+  (function() {
+    var s = document.getElementById('splash');
+    var h = new Date().getHours();
+    var g = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+    var parts = (document.querySelector('labos-navbar')?.getAttribute('user-name') || '').trim().split(/\s+/);
+    var first = /^(Dr\.|Prof\.|Mr\.|Mrs\.|Ms\.)$/i.test(parts[0]) ? (parts[1] || '') : (parts[0] || '');
+    document.getElementById('splash-greeting').textContent = first ? g + ', ' + first : g;
+    setTimeout(function() {
+      s.classList.add('fade-out');
+      s.addEventListener('transitionend', function() { s.remove(); }, { once: true });
+    }, 3000);
+  })();
+</script>
+
+<!-- DIALOG — No selection -->
+<labos-dialog id="dialog-no-selection" type="warning" title="Selection required">
+  <p style="font-size:14px;color:#333">Please select at least one item</p>
+  <labos-button slot="footer" variant="default" icon="check" onclick="closeDialog('dialog-no-selection')">OK</labos-button>
+</labos-dialog>
+</body>
+</html>

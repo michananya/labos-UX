@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order #2024-001 — LabOS</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<script src="../shared/labos-components.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+    background: #fff;
+    color: #333;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  :root {
+    --primary:      #265F68;
+    --primary-dark: #1F5156;
+    --primary-20:   #D5E0E1;
+    --warn:         #D20000;
+    --warn-hover:   #B90000;
+    --surface:      #F5F5F5;
+    --white:        #ffffff;
+    --disabled-op:  0.4;
+    --transition:   background 150ms ease, opacity 150ms ease,
+                    border-color 150ms ease, box-shadow 150ms ease;
+  }
+
+  labos-navbar { flex-shrink: 0; }
+
+  /* ═══════════════════════════════════════════════════════
+     SINGLE ITEM SCREEN LAYOUT
+     ─────────────────────────────────────────────────────
+     body (flex column, 100vh)
+       labos-navbar  (flex-shrink: 0)
+       .item-screen  (flex: 1, overflow-y: auto)  ← scroll container
+         .item-header (position: sticky, top: 0)  ← stays visible
+           .screen-top > .search-zone             ← row 1: search + add
+           .item-identity                         ← row 2: title + badge
+           .item-actions                          ← row 3: action buttons + bottom gap
+         .item-body   (flex: 1, padding: 24px 16px) ← scrolls under header
+  ═══════════════════════════════════════════════════════ */
+
+  .item-screen {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Sticky header ── */
+  .item-header {
+    flex-shrink: 0;
+    background: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  /* Row 1 — search zone (reuses list-screen pattern) */
+  .screen-top  { padding: 16px; border-bottom: 1px solid #E4E4E4; }
+  .search-zone { display: flex; align-items: center; gap: 10px; }
+  .search-zone labos-rounded-search { width: 300px; flex-shrink: 0; }
+
+  /* Row 2 — entity identity */
+  .item-identity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px 0;
+  }
+
+  .item-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  /* Row 3 — action buttons + 16px gap before content */
+  .item-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px 16px;
+  }
+
+  /* ── Scrollable body ── */
+  .item-body {
+    flex: 1;
+    padding: 0 16px 24px;
+  }
+
+  /* ── Content sections ── */
+  .item-section { margin-bottom: 32px; }
+
+  .item-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #888;
+    margin-bottom: 14px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #EBEBEB;
+  }
+
+  .item-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px 32px;
+  }
+
+  .item-field-label {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 3px;
+  }
+
+  .item-field-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .item-field-value--empty {
+    font-weight: 400;
+    color: #aaa;
+  }
+
+  /* text link — standard rule */
+  a.item-link {
+    color: #265F68;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  /* Embedded grid wrapper */
+  .item-grid-wrap {
+    height: 280px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Splash ── */
+  #splash {
+    position: fixed; inset: 0; background: #fff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 9999; transition: opacity 0.6s ease; --draw-speed: 0.75;
+  }
+  #splash.fade-out { opacity: 0; pointer-events: none; }
+  #splash svg { width: 300px; }
+  #splash .greeting {
+    font-family: 'Open Sans', sans-serif; font-size: 18px; font-weight: 300; color: #333;
+    margin-top: 28px; opacity: 0; animation: splashGreeting 0.8s ease 0.7s both;
+  }
+  @keyframes splashGreeting {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Dialog form */
+  .form-row { display: flex; gap: 10px; align-items: flex-end; }
+  .form-row labos-input,
+  .form-row labos-select,
+  .form-row labos-autocomplete { flex: 1; min-width: 0; }
+  .delete-warn { color: #D20000; font-weight: 600; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<!-- ── SPLASH ── -->
+<div id="splash"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 716.95 164.92">
+  <defs><style>
+    .cls-1,.cls-2{stroke:#333}.cls-1,.cls-2,.cls-3{fill:none;stroke-linecap:round;stroke-width:17px}.cls-1,.cls-3{stroke-linejoin:round}.cls-2{stroke-miterlimit:10}.cls-3{stroke:#00b08a}
+    .draw{stroke-dasharray:1;stroke-dashoffset:1}.draw-rev{stroke-dasharray:1;stroke-dashoffset:-1}
+    @keyframes draw{to{stroke-dashoffset:0}}
+    @keyframes breathe{0%,100%{stroke-opacity:1}50%{stroke-opacity:.72}}
+    .el-cloud{animation:draw calc(.85s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.05s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-divider{animation:draw calc(.3s * var(--draw-speed,1)) ease-out calc(.55s * var(--draw-speed,1)) both}
+    .el-note-r{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-note-l{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-circle{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.1s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-s{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.6s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+  </style></defs>
+  <g>
+    <path pathLength="1" class="cls-3 draw-rev el-cloud" d="M195.39,156.4H49.82s-41.32,1.93-41.32-38.95c0-37.37,38.71-40.71,38.71-40.71,0,0,.91-22.5,19.57-32.15,19.12-9.89,34.43.18,34.43.18,0,0,5.03-24.98,37.85-34.19,31.93-8.97,56.33,14.04,56.33,14.04"/>
+    <line pathLength="1" class="cls-1 draw el-divider" x1="222.66" y1="8.5" x2="222.66" y2="156.42"/>
+    <path pathLength="1" class="cls-2 draw el-note-r" d="M394.68,70.21c5.37-2.28,11.28-3.53,17.48-3.53,24.78,0,44.87,20.09,44.87,44.87s-20.09,44.87-44.87,44.87-44.87-20.09-44.87-44.87V9.06"/>
+    <path pathLength="1" class="cls-2 draw el-note-l" d="M312.94,152.26c-5.37,2.28-11.28,3.53-17.48,3.53-24.78,0-44.87-20.09-44.87-44.87,0-24.78,20.09-44.87,44.87-44.87s44.87,20.09,44.87,44.87c0,6.2,0,45.49,0,45.49"/>
+    <circle pathLength="1" class="cls-3 draw el-circle" cx="546.26" cy="92.48" r="63.94"/>
+    <path pathLength="1" class="cls-3 draw el-s" d="M636.41,136.15s7.35,20.27,36.3,20.27c28.96,0,35.74-23.88,35.74-30.88,0-11.32-2.39-25.63-36.02-33.02-33.63-7.4-36.02-22.98-36.02-33.02,0-7,6.78-30.88,35.74-30.88s36.3,20.27,36.3,20.27"/>
+  </g>
+</svg>
+<p id="splash-greeting" class="greeting"></p>
+</div>
+
+<!-- ── NAVBAR ── -->
+<labos-navbar
+  id="navbar"
+  breadcrumbs='[{"label":"Orders list","href":"orders-list.html"},{"label":"Order #2024-001"}]'
+  user-name="Angela Doe"
+  user-org="LabOS NJ Laboratory">
+</labos-navbar>
+
+<!-- ── ITEM SCREEN ── -->
+<div class="item-screen">
+
+  <!-- Sticky header: search row + identity row + action bar -->
+  <div class="item-header">
+
+    <!-- Row 1: search + add -->
+    <div class="screen-top">
+      <div class="search-zone">
+        <labos-rounded-search id="order-search" placeholder="Search for order…"></labos-rounded-search>
+        <labos-button shape="rounded" icon="add" title="New Order" onclick="openDialog('dialog-add')"></labos-button>
+      </div>
+    </div>
+
+    <!-- Row 2: entity identity -->
+    <div class="item-identity">
+      <span class="item-title">Order #2024-001</span>
+      <labos-badge variant="success-l">Active</labos-badge>
+    </div>
+
+    <!-- Row 3: action buttons (16px bottom gap before content) -->
+    <div class="item-actions">
+      <labos-button variant="default" icon="edit">Edit</labos-button>
+      <labos-button variant="default" icon="delete">Delete</labos-button>
+      <labos-split-button id="btn-print" label="Print" icon="print" variant="default"></labos-split-button>
+      <labos-button variant="default" icon="check_circle_outline">Release</labos-button>
+    </div>
+
+  </div>
+
+  <!-- Scrollable body — content is per-screen -->
+  <div class="item-body">
+
+    <div class="item-section">
+      <div class="item-section-title">Patient information</div>
+      <div class="item-fields">
+        <div class="item-field">
+          <div class="item-field-label">Patient name</div>
+          <div class="item-field-value">
+            <a class="item-link" href="#">John Doe</a>
+          </div>
+        </div>
+        <div class="item-field">
+          <div class="item-field-label">Date of birth</div>
+          <div class="item-field-value">12.03.1985</div>
+        </div>
+        <div class="item-field">
+          <div class="item-field-label">ID number</div>
+          <div class="item-field-value">123456789</div>
+        </div>
+        <div class="item-field">
+          <div class="item-field-label">Phone</div>
+          <div class="item-field-value">050-123-4567</div>
+        </div>
+        <div class="item-field">
+          <div class="item-field-label">Physician</div>
+          <div class="item-field-value">
+            <a class="item-link" href="#">Dr. Sarah Cohen</a>
+          </div>
+        </div>
+        <div class="item-field">
+          <div class="item-field-label">Facility</div>
+          <div class="item-field-value">
+            <a class="item-link" href="#">City Medical Center</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="item-section">
+      <div class="item-section-title">Order details</div>
+      <div class="item-fields">
+        <div class="item-field">
+          <div class="item-field-label">Order date</div>
+          <div class="item-field-value">08.06.2024</div>
+        </div>
+        <div class="item-field">
+          <div class="item-field-label">Collection date</div>
+          <div class="item-field-value">09.06.2024</div>
+        </div>
+        <div class="item-field">
+          <div class="item-field-label">Priority</div>
+          <div class="item-field-value">Routine</div>
+        </div>
+        <div class="item-field">
+          <div class="item-field-label">Created by</div>
+          <div class="item-field-value">Angela Doe</div>
+        </div>
+        <div class="item-field">
+          <div class="item-field-label">Reason</div>
+          <div class="item-field-value">Annual checkup</div>
+        </div>
+        <div class="item-field">
+          <div class="item-field-label">Notes</div>
+          <div class="item-field-value item-field-value--empty">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="item-section">
+      <div class="item-section-title">Tests (4)</div>
+      <div class="item-grid-wrap">
+        <labos-grid id="tests-grid"></labos-grid>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- DIALOG — Edit order -->
+<labos-dialog id="dialog-edit" title="Edit order">
+  <div class="form-row">
+    <labos-autocomplete id="edit-patient"  placeholder="Patient"   mandatory></labos-autocomplete>
+    <labos-autocomplete id="edit-facility" placeholder="Facility"  mandatory></labos-autocomplete>
+  </div>
+  <div class="form-row">
+    <labos-autocomplete id="edit-physician" placeholder="Physician" mandatory></labos-autocomplete>
+    <labos-select       id="edit-status"    placeholder="Status"    mandatory></labos-select>
+  </div>
+  <labos-input id="edit-reason" placeholder="Reason"></labos-input>
+  <labos-button slot="footer" variant="default" cancel icon="close"  onclick="closeDialog('dialog-edit')">Cancel</labos-button>
+  <labos-button slot="footer" variant="accent"        icon="check"   onclick="saveEdit()">Save</labos-button>
+</labos-dialog>
+
+<!-- DIALOG — Delete confirm -->
+<labos-dialog id="dialog-delete" title="Delete order" type="confirm">
+  <p style="font-size:14px;color:#333">Are you sure you want to delete order <strong>#2024-001</strong>?</p>
+  <p class="delete-warn">This action cannot be undone.</p>
+  <labos-button slot="footer" variant="default" cancel icon="close" onclick="closeDialog('dialog-delete')">Cancel</labos-button>
+  <labos-button slot="footer" variant="accent"        icon="delete" onclick="confirmDelete()">Delete</labos-button>
+</labos-dialog>
+
+<script>
+  // ── Helpers ────────────────────────────────────────────
+  function openDialog(id)  { document.getElementById(id).setAttribute('open', ''); }
+  function closeDialog(id) { document.getElementById(id).removeAttribute('open'); }
+
+  // ── Wire action buttons ────────────────────────────────
+  document.querySelector('[icon="edit"]').addEventListener('click',   () => openDialog('dialog-edit'));
+  document.querySelector('[icon="delete"]').addEventListener('click', () => openDialog('dialog-delete'));
+
+  function saveEdit()      { closeDialog('dialog-edit'); }
+  function confirmDelete() { closeDialog('dialog-delete'); }
+
+  // ── Tests grid ─────────────────────────────────────────
+  const TESTS_COLS = [
+    { field: 'code',    headerName: 'Code',       width: 120 },
+    { field: 'name',    headerName: 'Test name',  flex: 1    },
+    { field: 'status',  headerName: 'Status',     width: 140 },
+    { field: 'result',  headerName: 'Result',     width: 120 },
+    { field: 'ref',     headerName: 'Reference',  width: 160 },
+  ];
+  const TESTS_DATA = [
+    { code: 'CBC',   name: 'Complete blood count',   status: 'Resulted',  result: 'Normal',  ref: 'See report'   },
+    { code: 'GLU',   name: 'Glucose',                status: 'Resulted',  result: '94 mg/dL', ref: '70–100 mg/dL' },
+    { code: 'TSH',   name: 'Thyroid stimulating hormone', status: 'Pending', result: '—', ref: '0.4–4.0 mIU/L' },
+    { code: 'VitD',  name: 'Vitamin D 25-OH',        status: 'Pending',   result: '—',       ref: '20–50 ng/mL'  },
+  ];
+  document.getElementById('tests-grid').setData(TESTS_COLS, TESTS_DATA);
+
+  // ── Print split-button options ─────────────────────────
+  document.getElementById('btn-print').setItems([
+    { label: 'Print order form',  icon: 'description' },
+    { label: 'Print barcode label', icon: 'qr_code'   },
+    { label: 'Print results',     icon: 'receipt_long' },
+  ]);
+</script>
+<script>
+  (function() {
+    var s = document.getElementById('splash');
+    var nav = sessionStorage.getItem('labos_navigated');
+    var pn  = performance.getEntriesByType('navigation')[0];
+    if (nav && pn && pn.type !== 'reload') { s.remove(); return; }
+    sessionStorage.setItem('labos_navigated', '1');
+    var h = new Date().getHours();
+    var g = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+    var parts = (document.querySelector('labos-navbar')?.getAttribute('user-name') || '').trim().split(/\s+/);
+    var first = /^(Dr\.|Prof\.|Mr\.|Mrs\.|Ms\.)$/i.test(parts[0]) ? (parts[1] || '') : (parts[0] || '');
+    document.getElementById('splash-greeting').textContent = first ? g + ', ' + first : g;
+    setTimeout(function() {
+      s.classList.add('fade-out');
+      s.addEventListener('transitionend', function() { s.remove(); }, { once: true });
+    }, 3000);
+  })();
+</script>
+</body>
+</html>

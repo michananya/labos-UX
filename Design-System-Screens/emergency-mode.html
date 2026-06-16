@@ -1,0 +1,1051 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backup routing — LabOS</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<script src="../shared/labos-components.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+    background: var(--screen-bg, #ffffff);
+    color: #333;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  :root {
+    --primary:      #265F68;
+    --primary-dark: #1F5156;
+    --primary-20:   #D5E0E1;
+    --warn:         #D20000;
+    --warn-hover:   #B90000;
+    --surface:      #F5F5F5;
+    --white:        #ffffff;
+    --disabled-op:  0.4;
+    --transition:   background 150ms ease, opacity 150ms ease,
+                    border-color 150ms ease, box-shadow 150ms ease;
+  }
+
+  labos-navbar { flex-shrink: 0; }
+
+  .screen-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+  .screen-top  { padding: 16px 16px 0; flex-shrink: 0; }
+
+  .search-zone {
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .action-bar {
+    display: flex; align-items: center; gap: 10px;
+    height: 36px; margin-top: 16px; flex-shrink: 0;
+  }
+
+labos-grid { margin: 0 16px; flex: 1; display: flex; flex-direction: column; }
+
+  .form-row { display: flex; gap: 10px; align-items: flex-end; }
+  .form-row labos-select,
+  .form-row labos-autocomplete { flex: 1; min-width: 0; }
+  .delete-warn { color: #D20000; font-weight: 600; margin-top: 8px; }
+
+
+  /* Splash */
+  #splash {
+    position: fixed; inset: 0; background: #fff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 9999; transition: opacity 0.6s ease; --draw-speed: 0.75;
+  }
+  #splash.fade-out { opacity: 0; pointer-events: none; }
+  #splash svg { width: 300px; }
+  #splash .greeting {
+    font-family: 'Open Sans', sans-serif; font-size: 18px; font-weight: 300; color: #333;
+    margin-top: 28px; opacity: 0; animation: splashGreeting 0.8s ease 0.7s both;
+  }
+  @keyframes splashGreeting {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── backup routing Banner ── */
+  @keyframes emPulseDot {
+    0%, 100% { transform: scale(1); }
+    50%       { transform: scale(0.85); }
+  }
+  @keyframes emPulseRing {
+    0%   { transform: translate(-50%, -50%) scale(1); opacity: 0.65; }
+    100% { transform: translate(-50%, -50%) scale(3.6); opacity: 0; }
+  }
+  #emergency-banner {
+    flex-shrink: 0;
+    background: var(--red-lighten-45);
+    color: var(--red-darken-15);
+    border-radius: 3px;
+    margin: 16px 16px 0;
+  }
+  .em-banner__inner {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px; gap: 16px;
+  }
+  .em-banner__left  { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .em-pulse {
+    position: relative;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--red-darken-15, #B30000);
+    flex-shrink: 0; margin: 0 8px;
+    animation: emPulseDot 1.6s ease-in-out infinite;
+  }
+  .em-pulse::before,
+  .em-pulse::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    background: var(--red-darken-15, #B30000);
+    animation: emPulseRing 1.6s ease-out infinite;
+  }
+  .em-pulse::after {
+    animation-delay: 0.6s;
+  }
+.em-banner__body  { min-width: 0; }
+  .em-banner__title { font-size: 15px; font-weight: 700; letter-spacing: 0.2px; }
+  .em-banner__desc  { font-size: 13px; opacity: 0.9; margin-top: 2px; }
+  .em-banner__meta  { display: flex; gap: 20px; margin-top: 5px; font-size: 12px; opacity: 0.72; }
+
+  /* ── Activation confirmation dialog ── */
+  labos-button[disabled] { pointer-events: none; opacity: var(--disabled-op, 0.4); }
+  .em-activate-list {
+    margin-top: 8px; padding-left: 18px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .em-activate-list li { font-size: 14px; color: #333; line-height: 1.5; }
+  .em-countdown {
+    display: flex; align-items: center; gap: 16px;
+    margin-top: 16px; padding: 12px 0;
+  }
+  .em-countdown__text { font-size: 13px; color: #555; line-height: 1.5; }
+
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 716.95 164.92">
+  <defs><style>
+    .cls-1,.cls-2{stroke:#333}.cls-1,.cls-2,.cls-3{fill:none;stroke-linecap:round;stroke-width:17px}.cls-1,.cls-3{stroke-linejoin:round}.cls-2{stroke-miterlimit:10}.cls-3{stroke:#00b08a}
+    .draw{stroke-dasharray:1;stroke-dashoffset:1}.draw-rev{stroke-dasharray:1;stroke-dashoffset:-1}
+    @keyframes draw{to{stroke-dashoffset:0}}
+    @keyframes breathe{0%,100%{stroke-opacity:1}50%{stroke-opacity:.72}}
+    .el-cloud{animation:draw calc(.85s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.05s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-divider{animation:draw calc(.3s * var(--draw-speed,1)) ease-out calc(.55s * var(--draw-speed,1)) both}
+    .el-note-r{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-note-l{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-circle{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.1s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-s{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.6s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+  </style></defs>
+  <g>
+    <path pathLength="1" class="cls-3 draw-rev el-cloud" d="M195.39,156.4H49.82s-41.32,1.93-41.32-38.95c0-37.37,38.71-40.71,38.71-40.71,0,0,.91-22.5,19.57-32.15,19.12-9.89,34.43.18,34.43.18,0,0,5.03-24.98,37.85-34.19,31.93-8.97,56.33,14.04,56.33,14.04"/>
+    <line pathLength="1" class="cls-1 draw el-divider" x1="222.66" y1="8.5" x2="222.66" y2="156.42"/>
+    <path pathLength="1" class="cls-2 draw el-note-r" d="M394.68,70.21c5.37-2.28,11.28-3.53,17.48-3.53,24.78,0,44.87,20.09,44.87,44.87s-20.09,44.87-44.87,44.87-44.87-20.09-44.87-44.87V9.06"/>
+    <path pathLength="1" class="cls-2 draw el-note-l" d="M312.94,152.26c-5.37,2.28-11.28,3.53-17.48,3.53-24.78,0-44.87-20.09-44.87-44.87,0-24.78,20.09-44.87,44.87-44.87s44.87,20.09,44.87,44.87c0,6.2,0,45.49,0,45.49"/>
+    <circle pathLength="1" class="cls-3 draw el-circle" cx="546.26" cy="92.48" r="63.94"/>
+    <path pathLength="1" class="cls-3 draw el-s" d="M636.41,136.15s7.35,20.27,36.3,20.27c28.96,0,35.74-23.88,35.74-30.88,0-11.32-2.39-25.63-36.02-33.02-33.63-7.4-36.02-22.98-36.02-33.02,0-7,6.78-30.88,35.74-30.88s36.3,20.27,36.3,20.27"/>
+  </g>
+</svg>
+<p id="splash-greeting" class="greeting"></p>
+</div>
+
+<!-- NAVBAR -->
+<labos-navbar
+  id="navbar"
+  breadcrumbs='[{"label":"Backup routing"}]'
+  user-name="Angela Doe"
+  user-org="LabOS laboratory">
+</labos-navbar>
+
+<!-- EMERGENCY MODE ACTIVE BANNER -->
+<div id="emergency-banner" style="display:none" role="alert" aria-live="assertive" aria-label="Backup routing is active">
+  <div class="em-banner__inner">
+    <div class="em-banner__left">
+      <span class="em-pulse"></span>
+<div class="em-banner__body">
+        <div class="em-banner__title">Backup routing active</div>
+        <div class="em-banner__desc">Backup routing definitions are currently active. Standard routing behavior may be overridden across the system.</div>
+        <div class="em-banner__meta">
+          <span id="em-activated-at"></span>
+          <span id="em-activated-by"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN BODY -->
+<main class="screen-body">
+
+  <div class="screen-top">
+
+    <div class="search-zone">
+      <labos-rounded-search id="routing-search" placeholder="Search routing definitions" mode="filter" style="width:360px"></labos-rounded-search>
+    </div>
+
+    <div class="action-bar">
+      <labos-button-menu id="btn-em" type="menu" variant="warn" icon="warning" label="Turn on backup routing"></labos-button-menu>
+      <labos-button variant="default" icon="add"    onclick="openAddDialog()">Add routing</labos-button>
+      <labos-button id="btn-edit"   variant="default" icon="edit"   onclick="openEditDialog()">Edit</labos-button>
+      <labos-button id="btn-delete" variant="default" icon="delete" onclick="requireSelection('dialog-delete')">Delete</labos-button>
+    </div>
+
+
+</div>
+
+  <labos-grid id="grid" title="Routing definitions" mode="simple"></labos-grid>
+
+</main>
+
+<!-- DIALOG: Add Routing -->
+<labos-dialog id="dialog-add" title="Add routing">
+  <labos-text-header type="h4" weight="600">Collection site</labos-text-header>
+  <labos-chip-list id="add-site-chips" mode="single" style="margin-bottom:12px"></labos-chip-list>
+  <labos-autocomplete id="add-site"        placeholder="Collection site"  mandatory style="display:none"></labos-autocomplete>
+  <labos-simple-list id="add-site-list" type="actions" no-edit style="display:none;margin-top:0;margin-bottom:12px"></labos-simple-list>
+  <labos-text-header type="h4" weight="600" style="margin-top:12px">Level</labos-text-header>
+  <labos-chip-list id="add-level-chips" mode="single" style="margin-bottom:12px"></labos-chip-list>
+  <labos-autocomplete id="add-level-value" placeholder=""                 mandatory style="display:none"></labos-autocomplete>
+  <labos-simple-list id="add-level-value-list" type="actions" no-edit style="display:none;margin-top:0;margin-bottom:12px"></labos-simple-list>
+  <labos-autocomplete id="add-dest"        placeholder="Destination site" mandatory></labos-autocomplete>
+  <labos-button slot="footer" variant="default" cancel icon="close" onclick="closeDialog('dialog-add')">Cancel</labos-button>
+  <labos-button slot="footer" variant="accent"        icon="check"  onclick="saveAdd()">Add</labos-button>
+</labos-dialog>
+
+<!-- DIALOG: Edit Routing -->
+<labos-dialog id="dialog-edit" title="Edit routing">
+  <labos-text-header type="h4" weight="600">Collection site</labos-text-header>
+  <labos-chip-list id="edit-site-chips" mode="single" style="margin-bottom:12px"></labos-chip-list>
+  <labos-autocomplete id="edit-site"        placeholder="Collection site"  mandatory style="display:none"></labos-autocomplete>
+  <labos-simple-list id="edit-site-list" type="actions" no-edit style="display:none;margin-top:0;margin-bottom:12px"></labos-simple-list>
+  <labos-text-header type="h4" weight="600" style="margin-top:12px">Level</labos-text-header>
+  <labos-chip-list id="edit-level-chips" mode="single" style="margin-bottom:12px"></labos-chip-list>
+  <labos-autocomplete id="edit-level-value" placeholder=""                 mandatory style="display:none"></labos-autocomplete>
+  <labos-simple-list id="edit-level-value-list" type="actions" no-edit style="display:none;margin-top:0;margin-bottom:12px"></labos-simple-list>
+  <labos-autocomplete id="edit-dest"        placeholder="Destination site" mandatory></labos-autocomplete>
+  <labos-button slot="footer" variant="default" cancel icon="close" onclick="closeDialog('dialog-edit')">Cancel</labos-button>
+  <labos-button slot="footer" variant="accent"        icon="check"  onclick="saveEdit()">Save</labos-button>
+</labos-dialog>
+
+<!-- DIALOG: Delete confirm -->
+<labos-dialog id="dialog-delete" title="Delete routing" type="confirm">
+  <p>Are you sure you want to delete the selected routing definition(s)?</p>
+  <p class="delete-warn">This action cannot be undone.</p>
+  <labos-button slot="footer" variant="default" cancel icon="close"  onclick="closeDialog('dialog-delete')">Cancel</labos-button>
+  <labos-button slot="footer" variant="warn"         icon="delete"   onclick="confirmDelete()">Delete routing</labos-button>
+</labos-dialog>
+
+<!-- DIALOG: No selection -->
+<labos-dialog id="dialog-no-selection" type="warning" title="Selection required">
+  <p style="font-size:14px;color:#333">Please select at least one item</p>
+  <labos-button slot="footer" variant="default" icon="check" onclick="closeDialog('dialog-no-selection')">OK</labos-button>
+</labos-dialog>
+
+<!-- DIALOG: Activate backup routing -->
+<labos-dialog id="dialog-activate" title="Activate backup routing" type="confirm" size="medium">
+  <p>You are about to activate backup routing.</p>
+  <div id="em-activate-scope" style="margin-top:10px;padding:10px 12px;background:#F5F5F5;border-radius:4px;border-left:3px solid #D20000;">
+    <p style="font-size:13px;font-weight:600;color:#333;margin-bottom:6px">Selected routing definitions:</p>
+    <ul id="em-activate-scope-list" style="padding-left:16px;font-size:13px;color:#555;display:flex;flex-direction:column;gap:3px;"></ul>
+  </div>
+  <p style="margin-top:10px;font-weight:600">When backup routing is enabled:</p>
+  <ul class="em-activate-list">
+    <li>Backup routing definitions will immediately become active</li>
+    <li>Standard routing behavior may be overridden</li>
+    <li>Samples and tests may be redirected to alternative performing laboratories</li>
+    <li>Operational workflows across the system may be affected</li>
+  </ul>
+  <p style="margin-top:10px;color:#666;font-style:italic">Backup routing should only be activated during authorized extraordinary situations.</p>
+  <p style="margin-top:6px;color:#666;font-style:italic">Please review this action carefully before continuing.</p>
+  <div class="em-countdown">
+    <svg width="72" height="72" viewBox="0 0 72 72" style="flex-shrink:0">
+      <circle cx="36" cy="36" r="28" fill="none" stroke="#E4E4E4" stroke-width="5"/>
+      <circle id="em-countdown-ring" cx="36" cy="36" r="28" fill="none"
+              stroke="#D20000" stroke-width="5" stroke-linecap="round"
+              transform="rotate(-90 36 36)"/>
+      <text x="36" y="42" text-anchor="middle" font-size="19" font-weight="700"
+            fill="#333" font-family="Open Sans,sans-serif">
+        <tspan id="em-countdown-number">10</tspan>
+      </text>
+    </svg>
+    <p id="em-countdown-text" class="em-countdown__text">Please wait 10 seconds before confirming backup routing activation.</p>
+  </div>
+  <labos-button slot="footer" variant="default" cancel icon="close"   onclick="cancelActivate()">Cancel</labos-button>
+  <labos-button slot="footer" variant="warn"    icon="warning" id="btn-confirm-activate" onclick="confirmActivate()" disabled>Turn on backup routing</labos-button>
+</labos-dialog>
+
+<!-- DIALOG: Deactivate backup routing -->
+<labos-dialog id="dialog-deactivate" title="Deactivate backup routing" type="confirm">
+  <p>You are about to deactivate backup routing.</p>
+  <div id="em-deactivate-scope" style="margin-top:10px;padding:10px 12px;background:#F5F5F5;border-radius:4px;border-left:3px solid #D20000;">
+    <p style="font-size:13px;font-weight:600;color:#333;margin-bottom:6px">Selected routing definitions:</p>
+    <ul id="em-deactivate-scope-list" style="padding-left:16px;font-size:13px;color:#555;display:flex;flex-direction:column;gap:3px;"></ul>
+  </div>
+  <p style="margin-top:8px">Do you want to continue?</p>
+  <labos-button slot="footer" variant="default" cancel icon="close"          onclick="cancelDeactivate()">Cancel</labos-button>
+  <labos-button slot="footer" variant="warn"         icon="power_settings_new" onclick="confirmDeactivate()">Turn off backup routing</labos-button>
+</labos-dialog>
+
+<labos-advanced-search id="adv-site-search" title="Collection sites"></labos-advanced-search>
+
+<labos-alert id="alert-validation" type="warning"></labos-alert>
+<labos-toast></labos-toast>
+
+<script>
+  // ── Reference data ──────────────────────────────────────────────────────────
+  const COLLECTION_SITES = [
+    { code: 'SITE-001', name: 'Main Laboratory' },
+    { code: 'SITE-002', name: 'Outpatient Clinic A' },
+    { code: 'SITE-003', name: 'Emergency Unit' },
+    { code: 'SITE-004', name: 'Pediatric Ward and Neonatal Intensive Care Unit' },
+    { code: 'SITE-005', name: 'Oncology Center' },
+    { code: 'SITE-006', name: 'Department of Cardiology and Cardiovascular Diagnostic Center' },
+    { code: 'SITE-007', name: 'ICU' },
+    { code: 'SITE-008', name: 'Surgical and Operating Theatre Complex — Main Building' },
+  ];
+
+  const DESTINATION_SITES = [
+    { code: 'DEST-001', name: 'HaEmek' },
+    { code: 'DEST-002', name: 'Soroka' },
+    { code: 'DEST-003', name: 'MegaLab' },
+    { code: 'DEST-004', name: 'Prozhinin' },
+    { code: 'DEST-005', name: 'Nesher' },
+    { code: 'DEST-006', name: 'Eilat' },
+  ];
+
+  const LEVELS = [
+    { value: 'ALL_TESTS',  label: 'All tests'   },
+    { value: 'TEST',       label: 'Tests'        },
+    { value: 'DEPARTMENT', label: 'Departments' },
+  ];
+  const LEVEL_LABEL = Object.fromEntries(LEVELS.map(l => [l.value, l.label]));
+
+  const DEPARTMENTS = [
+    { code: 'DEPT-001', name: 'Hematology' },
+    { code: 'DEPT-002', name: 'Biochemistry' },
+    { code: 'DEPT-003', name: 'Microbiology' },
+    { code: 'DEPT-004', name: 'Immunology' },
+    { code: 'DEPT-005', name: 'Coagulation' },
+    { code: 'DEPT-006', name: 'Urinalysis' },
+  ];
+  const WORKBENCHES = [
+    { code: 'WB-001', name: 'Blood Count Analyzer' },
+    { code: 'WB-002', name: 'Chemistry Analyzer' },
+    { code: 'WB-003', name: 'Culture System' },
+    { code: 'WB-004', name: 'Immunoassay Analyzer' },
+    { code: 'WB-005', name: 'Coagulation Analyzer' },
+  ];
+  const TESTS = [
+    { code: 'TEST-001', name: 'CBC' },
+    { code: 'TEST-002', name: 'Glucose' },
+    { code: 'TEST-003', name: 'Blood Culture' },
+    { code: 'TEST-004', name: 'HbA1c' },
+    { code: 'TEST-005', name: 'PT/INR' },
+    { code: 'TEST-006', name: 'Urinalysis' },
+    { code: 'TEST-007', name: 'Troponin' },
+    { code: 'TEST-008', name: 'D-Dimer' },
+  ];
+
+  const LEVEL_VALUE_OPTIONS = {
+    DEPARTMENT: DEPARTMENTS.map(d => ({ label: d.name, row2: d.code, value: d.code })),
+    TEST:       TESTS.map(t => ({ label: t.name, row2: t.code, value: t.code })),
+  };
+  const LEVEL_VALUE_PLACEHOLDER = {
+    DEPARTMENT: 'Department',
+    TEST:       'Test',
+  };
+
+  function getLevelValueName(level, code) {
+    const map = { DEPARTMENT: DEPARTMENTS, TEST: TESTS };
+    return map[level]?.find(x => x.code === code)?.name || code;
+  }
+
+  // ── Data ────────────────────────────────────────────────────────────────────
+  let ALL_ROWS = [
+    { id:1, collectionSiteCode:'ALL',      collectionSiteDisplay:'ALL',                 level:'ALL_TESTS',  destinationCode:'DEST-001', destination:'HaEmek'    },
+    { id:2, collectionSiteCode:'SITE-003', collectionSiteDisplay:'Emergency Unit',       level:'ALL_TESTS',  destinationCode:'DEST-001', destination:'HaEmek'    },
+    { id:3, collectionSiteCode:'ALL',      collectionSiteDisplay:'ALL',                 level:'DEPARTMENT', levelValues:[{code:'DEPT-001', name:'Hematology'}],   destinationCode:'DEST-002', destination:'Soroka'    },
+    { id:4, collectionSiteCode:'SITE-002', collectionSiteDisplay:'Outpatient Clinic A',  level:'TEST',       levelValues:[{code:'TEST-001', name:'CBC'}],           destinationCode:'DEST-003', destination:'MegaLab'   },
+    { id:5, collectionSiteCode:'SITE-007', collectionSiteDisplay:'ICU',                 level:'ALL_TESTS',  destinationCode:'DEST-004', destination:'Prozhinin'  },
+  ];
+  let nextId = 6;
+  let currentRows = [...ALL_ROWS];
+  let gridSelectionIndices = [];
+  let _gridSelectedRows = [];
+  let editingRowId = null;
+
+  // ── Grid ────────────────────────────────────────────────────────────────────
+  const COLUMNS = [
+    { field: '_emActive', label: '', type: 'indicator',
+      render: val => val ? '<span class="em-indicator-dot"></span>' : '' },
+    { field: 'collectionSiteDisplay', label: 'Collection site', sortable: true, filterable: true },
+    { field: 'levelLabel',            label: 'Level',           sortable: true, filterable: true },
+    { field: 'details',               label: 'Details',         sortable: true, filterable: true },
+    { field: 'destination',           label: 'Destination',     sortable: true, filterable: true },
+    { field: 'activatedBy',           label: 'Activated by',    sortable: true },
+    { field: 'activationDate',        label: 'Activation date', sortable: true },
+  ];
+
+  const grid = document.getElementById('grid');
+
+  function rowForGrid(r) {
+    const levelLabel = LEVEL_LABEL[r.level] || r.level;
+    const lvs = r.levelValues || [];
+    const details = (r.level !== 'ALL_TESTS' && lvs.length > 0)
+      ? lvs.map(lv => lv.name).join(', ')
+      : '';
+    return { ...r, levelLabel, details, _emActive: !!r.emergencyActive };
+  }
+
+  function _rowLabel(r) {
+    const details = (r.levelValues || []).map(lv => lv.name).join(', ');
+    return details
+      ? `${r.collectionSiteDisplay} — ${LEVEL_LABEL[r.level] || r.level}: ${details} → ${r.destination}`
+      : `${r.collectionSiteDisplay} — ${LEVEL_LABEL[r.level] || r.level} → ${r.destination}`;
+  }
+
+  grid.addEventListener('labos-selection-change', e => {
+    gridSelectionIndices = [...e.detail.indices].sort((a, b) => a - b);
+    _gridSelectedRows = e.detail.selected;
+  });
+
+  // ── Filtering ───────────────────────────────────────────────────────────────
+  let searchText = '';
+
+  function applyFilters() {
+    const q = searchText.toLowerCase().trim();
+    currentRows = ALL_ROWS.filter(r => {
+      if (q) {
+        const details = (r.levelValues || []).map(lv => lv.name).join(' ');
+        const hay = [r.collectionSiteDisplay, LEVEL_LABEL[r.level], details, r.destination].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    const hasActive = ALL_ROWS.some(r => r.emergencyActive);
+    grid.setData(hasActive ? COLUMNS : COLUMNS.filter(c => c.type !== 'indicator'), currentRows.map(rowForGrid));
+    gridSelectionIndices = [];
+    _gridSelectedRows = [];
+  }
+
+  document.getElementById('routing-search').addEventListener('labos-input', e => {
+    searchText = e.detail.value || '';
+    applyFilters();
+  });
+
+  applyFilters();
+
+  // ── Turn on/off backup routing split button ──────────────────────────────────
+  const _btnEm = document.getElementById('btn-em');
+  _btnEm.setItems([
+    { label: 'Turn off backup routing', value: 'turn-off' },
+  ]);
+  _btnEm.addEventListener('labos-click', () => {
+    _rowsToActivate = _gridSelectedRows.length > 0 ? _gridSelectedRows.slice() : currentRows.slice();
+    document.getElementById('em-activate-scope-list').innerHTML =
+      _rowsToActivate.map(r => `<li>${_rowLabel(r)}</li>`).join('');
+    openActivateDialog();
+  });
+  _btnEm.addEventListener('labos-select', e => {
+    if (e.detail.value !== 'turn-off') return;
+    _rowsToDeactivate = _gridSelectedRows.length > 0 ? _gridSelectedRows.slice() : currentRows.slice();
+    document.getElementById('em-deactivate-scope-list').innerHTML =
+      _rowsToDeactivate.map(r => `<li>${_rowLabel(r)}</li>`).join('');
+    openDialog('dialog-deactivate');
+  });
+
+  // ── Dialog helpers ──────────────────────────────────────────────────────────
+  function openDialog(id)  { document.getElementById(id).show(); }
+  function closeDialog(id) { document.getElementById(id).hide(); }
+
+  function requireSelection(dialogId) {
+    if (gridSelectionIndices.length === 0) { openDialog('dialog-no-selection'); return; }
+    openDialog(dialogId);
+  }
+
+  function isDuplicate(siteCode, level, levelValues, destCode, excludeId) {
+    const lvKey = arr => (arr || []).map(x => x.code).sort().join(',');
+    return ALL_ROWS.some(r =>
+      (excludeId == null || r.id !== excludeId) &&
+      r.collectionSiteCode === siteCode &&
+      r.level === level &&
+      lvKey(r.levelValues) === lvKey(levelValues) &&
+      r.destinationCode === destCode
+    );
+  }
+
+  // ── Add dialog ──────────────────────────────────────────────────────────────
+  let _addSiteMode = 'all';
+  let _addSelectedSites = [];
+
+  const addSiteChips       = document.getElementById('add-site-chips');
+  const addSiteField       = document.getElementById('add-site');
+  const addSiteList        = document.getElementById('add-site-list');
+  const addLevelChips      = document.getElementById('add-level-chips');
+  const addLevelValueField = document.getElementById('add-level-value');
+  const addLevelValueList  = document.getElementById('add-level-value-list');
+  let _addLevel = 'ALL_TESTS';
+  let _addLevelValues = [];
+  let _addDestCode = null;
+  const addDestField       = document.getElementById('add-dest');
+
+  addSiteChips.setItems([
+    { label: 'All sites',                value: 'all',      selected: true },
+    { label: 'Specific collection site', value: 'specific', selected: false },
+  ]);
+
+  addLevelChips.setItems(LEVELS.map(l => ({ label: l.label, value: l.value, selected: l.value === 'ALL_TESTS' })));
+  addSiteField.setOptions(COLLECTION_SITES.map(s => ({ label: s.name, row2: s.code, value: s.code })));
+  addDestField.setOptions(DESTINATION_SITES.map(d => ({ label: d.name, row2: d.code, value: d.code })));
+
+  function renderAddSiteList() {
+    if (_addSelectedSites.length === 0) {
+      addSiteList.style.display = 'none';
+      addSiteField.removeAttribute('data-has-items');
+    } else {
+      addSiteList.style.display = '';
+      addSiteList.setItems(_addSelectedSites.map(s => ({ label: s.name, value: s.code })));
+      addSiteField.setAttribute('data-has-items', '');
+    }
+  }
+
+  addSiteList.addEventListener('labos-delete', e => {
+    _addSelectedSites.splice(e.detail.index, 1);
+    renderAddSiteList();
+  });
+
+  addSiteField.addEventListener('labos-change', e => {
+    const code = e.detail?.value;
+    if (!code) return;
+    const name = COLLECTION_SITES.find(s => s.code === code)?.name || code;
+    if (!_addSelectedSites.find(s => s.code === code)) {
+      _addSelectedSites.push({ code, name });
+      renderAddSiteList();
+    }
+    requestAnimationFrame(() => { addSiteField.value = ''; });
+    addSiteField.removeAttribute('invalid');
+  });
+  addSiteField.addEventListener('labos-blur', () => {
+    if (_addSelectedSites.length > 0) addSiteField.removeAttribute('invalid');
+  });
+
+  function renderAddLevelValueList() {
+    if (_addLevelValues.length === 0) {
+      addLevelValueList.style.display = 'none';
+      addLevelValueField.removeAttribute('data-has-items');
+    } else {
+      addLevelValueList.style.display = '';
+      addLevelValueList.setItems(_addLevelValues.map(v => ({ label: v.name, value: v.code })));
+      addLevelValueField.setAttribute('data-has-items', '');
+    }
+  }
+
+  addLevelValueList.addEventListener('labos-delete', e => {
+    _addLevelValues.splice(e.detail.index, 1);
+    renderAddLevelValueList();
+  });
+
+  addLevelChips.addEventListener('labos-change', e => {
+    if (!e.detail.selected) return;
+    const lv = e.detail.value;
+    _addLevel = lv;
+    _addLevelValues = [];
+    renderAddLevelValueList();
+    addLevelValueField.removeAttribute('invalid');
+    addLevelValueField.value = '';
+    if (lv && lv !== 'ALL_TESTS') {
+      addLevelValueField.setAttribute('placeholder', LEVEL_VALUE_PLACEHOLDER[lv]);
+      addLevelValueField.setOptions(LEVEL_VALUE_OPTIONS[lv]);
+      addLevelValueField.style.display = '';
+    } else {
+      addLevelValueField.style.display = 'none';
+    }
+  });
+
+  addLevelValueField.addEventListener('labos-change', e => {
+    const code = e.detail?.value;
+    if (!code) return;
+    const name = (LEVEL_VALUE_OPTIONS[_addLevel] || []).find(o => o.value === code)?.label || code;
+    if (!_addLevelValues.find(v => v.code === code)) {
+      _addLevelValues.push({ code, name });
+      renderAddLevelValueList();
+    }
+    requestAnimationFrame(() => { addLevelValueField.value = ''; });
+    addLevelValueField.removeAttribute('invalid');
+  });
+  addLevelValueField.addEventListener('labos-blur', () => {
+    if (_addLevelValues.length > 0) addLevelValueField.removeAttribute('invalid');
+  });
+  addDestField.addEventListener('labos-change', e => { _addDestCode = e.detail?.value || null; });
+
+  addSiteChips.addEventListener('labos-change', e => {
+    if (!e.detail.selected) return;
+    _addSiteMode = e.detail.value;
+    if (_addSiteMode === 'all') {
+      addSiteField.style.display = 'none';
+      addSiteField.value = '';
+      addSiteField.removeAttribute('invalid');
+      _addSelectedSites = [];
+      renderAddSiteList();
+    } else {
+      addSiteField.style.display = '';
+    }
+  });
+
+  function openAddDialog() {
+    _addSiteMode = 'all';
+    _addSelectedSites = [];
+    addSiteChips.setItems([
+      { label: 'All sites',                value: 'all',      selected: true },
+      { label: 'Specific collection site', value: 'specific', selected: false },
+    ]);
+    addSiteField.style.display = 'none';
+    addSiteField.value = '';
+    addSiteList.style.display = 'none';
+    _addLevel = 'ALL_TESTS';
+    _addLevelValues = [];
+    _addDestCode = null;
+    addLevelChips.setItems(LEVELS.map(l => ({ label: l.label, value: l.value, selected: l.value === 'ALL_TESTS' })));
+    addLevelValueField.style.display = 'none';
+    addLevelValueField.value = '';
+    addLevelValueList.style.display = 'none';
+    addDestField.value = '';
+    [addSiteField, addLevelValueField, addDestField].forEach(f => f.removeAttribute('invalid'));
+    openDialog('dialog-add');
+  }
+
+  function saveAdd() {
+    let firstInvalid = null;
+    const mark = el => { el.setAttribute('invalid', ''); if (!firstInvalid) firstInvalid = el; };
+
+    if (_addSiteMode === 'specific' && _addSelectedSites.length === 0) mark(addSiteField);
+    if (_addLevel !== 'ALL_TESTS' && _addLevelValues.length === 0) mark(addLevelValueField);
+    if (!_addDestCode)  mark(addDestField);
+    if (firstInvalid) { firstInvalid.focus?.(); return; }
+
+    const levelValues  = _addLevel !== 'ALL_TESTS' ? _addLevelValues : [];
+    const dest         = DESTINATION_SITES.find(d => d.code === _addDestCode)?.name || _addDestCode;
+    const sitesToSave  = _addSiteMode === 'all'
+      ? [{ code: 'ALL', name: 'ALL', arr: [] }]
+      : _addSelectedSites.map(s => ({ code: s.code, name: s.name, arr: [s] }));
+
+    if (sitesToSave.some(s => isDuplicate(s.code, _addLevel, levelValues, _addDestCode, null))) {
+      document.getElementById('alert-validation').show(
+        'A routing definition with the same collection site, level, and destination already exists.'
+      );
+      return;
+    }
+
+    sitesToSave.forEach(s => {
+      ALL_ROWS.push({
+        id: nextId++,
+        collectionSiteCode:    s.code,
+        collectionSiteDisplay: s.name,
+        collectionSites:       s.arr,
+        level:           _addLevel,
+        levelValues,
+        destinationCode: _addDestCode,
+        destination:     dest,
+      });
+    });
+
+    applyFilters();
+    closeDialog('dialog-add');
+    LabosToast.show('Routing definition added.', 'success');
+  }
+  // ── Edit dialog ─────────────────────────────────────────────────────────────
+  let _editSiteMode = 'all';
+  let _editSelectedSites = [];
+
+  const editSiteChips       = document.getElementById('edit-site-chips');
+  const editSiteField       = document.getElementById('edit-site');
+  const editSiteList        = document.getElementById('edit-site-list');
+  const editLevelChips      = document.getElementById('edit-level-chips');
+  const editLevelValueField = document.getElementById('edit-level-value');
+  const editLevelValueList  = document.getElementById('edit-level-value-list');
+  let _editLevel = 'ALL_TESTS';
+  let _editLevelValues = [];
+  let _editDestCode = null;
+  const editDestField       = document.getElementById('edit-dest');
+
+  editSiteChips.setItems([
+    { label: 'All sites',                value: 'all',      selected: true },
+    { label: 'Specific collection site', value: 'specific', selected: false },
+  ]);
+
+  editLevelChips.setItems(LEVELS.map(l => ({ label: l.label, value: l.value, selected: l.value === 'ALL_TESTS' })));
+  editSiteField.setOptions(COLLECTION_SITES.map(s => ({ label: s.name, row2: s.code, value: s.code })));
+  editDestField.setOptions(DESTINATION_SITES.map(d => ({ label: d.name, row2: d.code, value: d.code })));
+
+  // ── Collection Site Advanced Search ──────────────────────────
+  const advSiteSearch = document.getElementById('adv-site-search');
+  advSiteSearch.setData([
+    { field: 'name', label: 'Site name' },
+    { field: 'code', label: 'Code' },
+  ], COLLECTION_SITES.map(s => ({ name: s.name, code: s.code })));
+  advSiteSearch.setSortOptions([{ label: 'Name', value: 'name', selected: true }]);
+  advSiteSearch._grid.style.marginLeft  = '0';
+  advSiteSearch._grid.style.marginRight = '0';
+
+  const SITE_SEARCH_ACTION = [{ icon: 'search', value: 'search', title: 'Advanced search' }];
+  addSiteField.setSuffixActions(SITE_SEARCH_ACTION);
+  editSiteField.setSuffixActions(SITE_SEARCH_ACTION);
+
+  let _advSiteTarget = null;
+
+  addSiteField.addEventListener('labos-suffix-action', () => {
+    _advSiteTarget = addSiteField;
+    advSiteSearch.show(addSiteField.value);
+  });
+  editSiteField.addEventListener('labos-suffix-action', () => {
+    _advSiteTarget = editSiteField;
+    advSiteSearch.show(editSiteField.value);
+  });
+  advSiteSearch.addEventListener('labos-select', e => {
+    if (!_advSiteTarget) return;
+    const entries = e.detail.rows ? e.detail.rows.map(r => r.row) : [e.detail.row];
+    const isAdd   = _advSiteTarget === addSiteField;
+    const arr     = isAdd ? _addSelectedSites : _editSelectedSites;
+    entries.forEach(row => {
+      if (!arr.find(s => s.code === row.code)) arr.push({ code: row.code, name: row.name });
+    });
+    if (isAdd) renderAddSiteList(); else renderEditSiteList();
+    _advSiteTarget.value = '';
+    _advSiteTarget.removeAttribute('invalid');
+    _advSiteTarget = null;
+  });
+
+  function renderEditSiteList() {
+    if (_editSelectedSites.length === 0) {
+      editSiteList.style.display = 'none';
+      editSiteField.removeAttribute('data-has-items');
+    } else {
+      editSiteList.style.display = '';
+      editSiteList.setItems(_editSelectedSites.map(s => ({ label: s.name, value: s.code })));
+      editSiteField.setAttribute('data-has-items', '');
+    }
+  }
+
+  editSiteList.addEventListener('labos-delete', e => {
+    _editSelectedSites.splice(e.detail.index, 1);
+    renderEditSiteList();
+  });
+
+  editSiteField.addEventListener('labos-change', e => {
+    const code = e.detail?.value;
+    if (!code) return;
+    const name = COLLECTION_SITES.find(s => s.code === code)?.name || code;
+    if (!_editSelectedSites.find(s => s.code === code)) {
+      _editSelectedSites.push({ code, name });
+      renderEditSiteList();
+    }
+    requestAnimationFrame(() => { editSiteField.value = ''; });
+    editSiteField.removeAttribute('invalid');
+  });
+  editSiteField.addEventListener('labos-blur', () => {
+    if (_editSelectedSites.length > 0) editSiteField.removeAttribute('invalid');
+  });
+
+  function renderEditLevelValueList() {
+    if (_editLevelValues.length === 0) {
+      editLevelValueList.style.display = 'none';
+      editLevelValueField.removeAttribute('data-has-items');
+    } else {
+      editLevelValueList.style.display = '';
+      editLevelValueList.setItems(_editLevelValues.map(v => ({ label: v.name, value: v.code })));
+      editLevelValueField.setAttribute('data-has-items', '');
+    }
+  }
+
+  editLevelValueList.addEventListener('labos-delete', e => {
+    _editLevelValues.splice(e.detail.index, 1);
+    renderEditLevelValueList();
+  });
+
+  editLevelChips.addEventListener('labos-change', e => {
+    if (!e.detail.selected) return;
+    const lv = e.detail.value;
+    _editLevel = lv;
+    _editLevelValues = [];
+    renderEditLevelValueList();
+    editLevelValueField.removeAttribute('invalid');
+    editLevelValueField.value = '';
+    if (lv && lv !== 'ALL_TESTS') {
+      editLevelValueField.setAttribute('placeholder', LEVEL_VALUE_PLACEHOLDER[lv]);
+      editLevelValueField.setOptions(LEVEL_VALUE_OPTIONS[lv]);
+      editLevelValueField.style.display = '';
+    } else {
+      editLevelValueField.style.display = 'none';
+    }
+  });
+
+  editLevelValueField.addEventListener('labos-change', e => {
+    const code = e.detail?.value;
+    if (!code) return;
+    const name = (LEVEL_VALUE_OPTIONS[_editLevel] || []).find(o => o.value === code)?.label || code;
+    if (!_editLevelValues.find(v => v.code === code)) {
+      _editLevelValues.push({ code, name });
+      renderEditLevelValueList();
+    }
+    requestAnimationFrame(() => { editLevelValueField.value = ''; });
+    editLevelValueField.removeAttribute('invalid');
+  });
+  editLevelValueField.addEventListener('labos-blur', () => {
+    if (_editLevelValues.length > 0) editLevelValueField.removeAttribute('invalid');
+  });
+  editDestField.addEventListener('labos-change', e => { _editDestCode = e.detail?.value || null; });
+
+  editSiteChips.addEventListener('labos-change', e => {
+    if (!e.detail.selected) return;
+    _editSiteMode = e.detail.value;
+    if (_editSiteMode === 'all') {
+      editSiteField.style.display = 'none';
+      editSiteField.value = '';
+      editSiteField.removeAttribute('invalid');
+      _editSelectedSites = [];
+      renderEditSiteList();
+    } else {
+      editSiteField.style.display = '';
+    }
+  });
+
+  function openEditDialog() {
+    if (gridSelectionIndices.length === 0) { openDialog('dialog-no-selection'); return; }
+    if (gridSelectionIndices.length > 1) {
+      document.getElementById('alert-validation').show('Please select only one row to edit.');
+      return;
+    }
+
+    const row = ALL_ROWS.find(r => r.id === _gridSelectedRows[0]?.id);
+    editingRowId = row.id;
+
+    if (row.collectionSiteCode === 'ALL') {
+      _editSiteMode = 'all';
+      _editSelectedSites = [];
+      editSiteChips.setItems([
+        { label: 'All sites',                value: 'all',      selected: true },
+        { label: 'Specific collection site', value: 'specific', selected: false },
+      ]);
+      editSiteField.style.display = 'none';
+      editSiteField.value = '';
+      editSiteList.style.display = 'none';
+    } else {
+      _editSiteMode = 'specific';
+      _editSelectedSites = row.collectionSites && row.collectionSites.length
+        ? row.collectionSites.slice()
+        : [{ code: row.collectionSiteCode, name: row.collectionSiteDisplay }];
+      editSiteChips.setItems([
+        { label: 'All sites',                value: 'all',      selected: false },
+        { label: 'Specific collection site', value: 'specific', selected: true },
+      ]);
+      editSiteField.style.display = '';
+      editSiteField.value = '';
+      renderEditSiteList();
+    }
+
+    _editLevel = row.level;
+    editLevelChips.setItems(LEVELS.map(l => ({ label: l.label, value: l.value, selected: l.value === row.level })));
+    if (row.level && row.level !== 'ALL_TESTS' && (row.levelValues || []).length > 0) {
+      editLevelValueField.setAttribute('placeholder', LEVEL_VALUE_PLACEHOLDER[row.level]);
+      editLevelValueField.setOptions(LEVEL_VALUE_OPTIONS[row.level]);
+      editLevelValueField.style.display = '';
+      editLevelValueField.value = '';
+      _editLevelValues = (row.levelValues || []).slice();
+      renderEditLevelValueList();
+    } else {
+      editLevelValueField.style.display = 'none';
+      editLevelValueField.value = '';
+      editLevelValueList.style.display = 'none';
+      _editLevelValues = [];
+    }
+    _editDestCode = row.destinationCode;
+    editDestField.value = DESTINATION_SITES.find(d => d.code === row.destinationCode)?.name || row.destinationCode;
+    [editSiteField, editLevelValueField, editDestField].forEach(f => f.removeAttribute('invalid'));
+    openDialog('dialog-edit');
+  }
+
+  function saveEdit() {
+    let firstInvalid = null;
+    const mark = el => { el.setAttribute('invalid', ''); if (!firstInvalid) firstInvalid = el; };
+
+    if (_editSiteMode === 'specific' && _editSelectedSites.length === 0) mark(editSiteField);
+    if (_editLevel !== 'ALL_TESTS' && _editLevelValues.length === 0) mark(editLevelValueField);
+    if (!_editDestCode)  mark(editDestField);
+    if (firstInvalid) { firstInvalid.focus?.(); return; }
+
+    const levelValues  = _editLevel !== 'ALL_TESTS' ? _editLevelValues : [];
+    const dest         = DESTINATION_SITES.find(d => d.code === _editDestCode)?.name || _editDestCode;
+    const originalRow  = ALL_ROWS.find(r => r.id === editingRowId);
+    const sitesToSave  = _editSiteMode === 'all'
+      ? [{ code: 'ALL', name: 'ALL', arr: [] }]
+      : _editSelectedSites.map(s => ({ code: s.code, name: s.name, arr: [s] }));
+
+    if (sitesToSave.some(s => isDuplicate(s.code, _editLevel, levelValues, _editDestCode, editingRowId))) {
+      document.getElementById('alert-validation').show(
+        'A routing definition with the same collection site, level, and destination already exists.'
+      );
+      return;
+    }
+
+    ALL_ROWS = ALL_ROWS.filter(r => r.id !== editingRowId);
+    sitesToSave.forEach(s => {
+      ALL_ROWS.push({
+        id: nextId++,
+        collectionSiteCode:    s.code,
+        collectionSiteDisplay: s.name,
+        collectionSites:       s.arr,
+        level:           _editLevel,
+        levelValues,
+        destinationCode: _editDestCode,
+        destination:     dest,
+      });
+    });
+
+    applyFilters();
+    closeDialog('dialog-edit');
+    LabosToast.show('Routing definition updated.', 'success');
+  }
+  // ── Delete ──────────────────────────────────────────────────────────────────
+  function confirmDelete() {
+    const ids = new Set(_gridSelectedRows.map(r => r.id));
+    ALL_ROWS = ALL_ROWS.filter(r => !ids.has(r.id));
+    gridSelectionIndices = [];
+    applyFilters();
+    closeDialog('dialog-delete');
+    LabosToast.show('Routing definition(s) deleted.', 'success');
+  }
+
+  // ── Per-row backup routing state ─────────────────────────────────────────────
+  let _rowsToActivate   = [];
+  let _rowsToDeactivate = [];
+
+  function updateEmergencyModeUI() {
+    const activeCount = ALL_ROWS.filter(r => r.emergencyActive).length;
+    const banner = document.getElementById('emergency-banner');
+    if (activeCount > 0) {
+      banner.style.display = '';
+      document.getElementById('em-activated-at').textContent =
+        `${activeCount} routing definition${activeCount !== 1 ? 's' : ''} in backup routing state`;
+      document.getElementById('em-activated-by').textContent = '';
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+
+  // ── Activation countdown ─────────────────────────────────────────────────────
+  let _emCountdownTimer = null;
+  const _EM_CD_TOTAL = 10;
+  const _EM_CD_CIRC  = parseFloat((2 * Math.PI * 28).toFixed(3)); // ≈175.929
+
+  function openActivateDialog() {
+    openDialog('dialog-activate');
+    startEmCountdown();
+  }
+
+  function startEmCountdown() {
+    clearInterval(_emCountdownTimer);
+    _emCountdownTimer = null;
+    const ring = document.getElementById('em-countdown-ring');
+    const btn  = document.getElementById('btn-confirm-activate');
+    btn.setAttribute('disabled', '');
+    ring.style.transition      = 'none';
+    ring.style.strokeDasharray  = _EM_CD_CIRC;
+    ring.style.strokeDashoffset = 0;
+    document.getElementById('em-countdown-number').textContent = _EM_CD_TOTAL;
+    document.getElementById('em-countdown-text').textContent   =
+      `Please wait ${_EM_CD_TOTAL} seconds before confirming backup routing activation.`;
+    let remaining = _EM_CD_TOTAL;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      ring.style.transition = 'stroke-dashoffset 0.95s linear';
+      _emCountdownTimer = setInterval(() => {
+        remaining--;
+        ring.style.strokeDashoffset = _EM_CD_CIRC * (1 - remaining / _EM_CD_TOTAL);
+        document.getElementById('em-countdown-number').textContent = remaining;
+        document.getElementById('em-countdown-text').textContent   = remaining > 0
+          ? `Please wait ${remaining} second${remaining !== 1 ? 's' : ''} before confirming backup routing activation.`
+          : 'You may now confirm backup routing activation.';
+        if (remaining <= 0) {
+          clearInterval(_emCountdownTimer);
+          _emCountdownTimer = null;
+          btn.removeAttribute('disabled');
+        }
+      }, 1000);
+    }));
+  }
+
+  function cancelActivate() {
+    clearInterval(_emCountdownTimer);
+    _emCountdownTimer = null;
+    _rowsToActivate = [];
+    closeDialog('dialog-activate');
+  }
+
+  function confirmActivate() {
+    clearInterval(_emCountdownTimer);
+    _emCountdownTimer = null;
+    const _activatedBy = (document.querySelector('labos-navbar')?.getAttribute('user-name') || '').trim();
+    const _activatedAt = new Date();
+    const _dateStr = (() => {
+      const hh = String(_activatedAt.getHours()).padStart(2,'0');
+      const mm = String(_activatedAt.getMinutes()).padStart(2,'0');
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return `${hh}:${mm} ${months[_activatedAt.getMonth()]} ${_activatedAt.getDate()}, ${_activatedAt.getFullYear()}`;
+    })();
+    _rowsToActivate.forEach(sel => {
+      const r = ALL_ROWS.find(r => r.id === sel.id);
+      if (r) { r.emergencyActive = true; r.activatedBy = _activatedBy; r.activationDate = _dateStr; }
+    });
+    _rowsToActivate = [];
+    closeDialog('dialog-activate');
+    applyFilters();
+    updateEmergencyModeUI();
+  }
+
+  function cancelDeactivate() {
+    _rowsToDeactivate = [];
+    closeDialog('dialog-deactivate');
+  }
+
+  function confirmDeactivate() {
+    _rowsToDeactivate.forEach(sel => {
+      const r = ALL_ROWS.find(r => r.id === sel.id);
+      if (r) { r.emergencyActive = false; r.activatedBy = ''; r.activationDate = ''; }
+    });
+    _rowsToDeactivate = [];
+    closeDialog('dialog-deactivate');
+    applyFilters();
+    updateEmergencyModeUI();
+  }
+
+  updateEmergencyModeUI();
+</script>
+
+<script>
+  (function() {
+    var s = document.getElementById('splash');
+    var h = new Date().getHours();
+    var g = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+    var parts = (document.querySelector('labos-navbar')?.getAttribute('user-name') || '').trim().split(/\s+/);
+    var first = /^(Dr\.|Prof\.|Mr\.|Mrs\.|Ms\.)$/i.test(parts[0]) ? (parts[1] || '') : (parts[0] || '');
+    document.getElementById('splash-greeting').textContent = first ? g + ', ' + first : g;
+    setTimeout(function() {
+      s.classList.add('fade-out');
+      s.addEventListener('transitionend', function() { s.remove(); }, { once: true });
+    }, 3000);
+  })();
+</script>
+
+</body>
+</html>

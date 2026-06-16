@@ -1,0 +1,598 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Genetic Status on Approval — LabOS</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<script src="../shared/labos-components.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+    background: var(--screen-bg, #ffffff);
+    color: #333;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  :root {
+    --primary:      #265F68;
+    --primary-dark: #1F5156;
+    --primary-20:   #D5E0E1;
+    --warn:         #D20000;
+    --warn-hover:   #B90000;
+    --surface:      #F5F5F5;
+    --white:        #ffffff;
+    --disabled-op:  0.4;
+    --transition:   background 150ms ease, opacity 150ms ease,
+                    border-color 150ms ease, box-shadow 150ms ease;
+  }
+
+  labos-navbar { flex-shrink: 0; }
+
+  .screen-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+  .screen-top  { padding: 16px 16px 0; flex-shrink: 0; }
+
+  /* Action bar — first in screen-top */
+  .action-bar {
+    display: flex; align-items: center; gap: 10px;
+    height: 36px; flex-shrink: 0;
+  }
+
+  /* Filter zone — below action bar */
+  .filter-zone {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-top: 10px;
+  }
+
+  labos-grid { margin: 0 16px; flex: 1; display: flex; flex-direction: column; }
+
+  /* Dialog form */
+  .form-row { display: flex; gap: 10px; align-items: flex-end; }
+  .form-row labos-input,
+  .form-row labos-select,
+  .form-row labos-autocomplete { flex: 1; min-width: 0; }
+  .field-note  { font-size: 12px; color: #888; margin-top: 2px; }
+  .delete-warn { color: #D20000; font-weight: 600; margin-top: 8px; }
+
+  .radio-group { display: flex; gap: 16px; align-items: center; padding: 4px 0; }
+
+  /* Splash */
+  #splash {
+    position: fixed; inset: 0; background: #fff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 9999; transition: opacity 0.6s ease; --draw-speed: 0.75;
+  }
+  #splash.fade-out { opacity: 0; pointer-events: none; }
+  #splash svg { width: 300px; }
+  #splash .greeting {
+    font-family: 'Open Sans', sans-serif; font-size: 18px; font-weight: 300; color: #333;
+    margin-top: 28px; opacity: 0; animation: splashGreeting 0.8s ease 0.7s both;
+  }
+  @keyframes splashGreeting {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 716.95 164.92">
+  <defs><style>
+    .cls-1,.cls-2{stroke:#333}.cls-1,.cls-2,.cls-3{fill:none;stroke-linecap:round;stroke-width:17px}.cls-1,.cls-3{stroke-linejoin:round}.cls-2{stroke-miterlimit:10}.cls-3{stroke:#00b08a}
+    .draw{stroke-dasharray:1;stroke-dashoffset:1}.draw-rev{stroke-dasharray:1;stroke-dashoffset:-1}
+    @keyframes draw{to{stroke-dashoffset:0}}
+    @keyframes breathe{0%,100%{stroke-opacity:1}50%{stroke-opacity:.72}}
+    .el-cloud{animation:draw calc(.85s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.05s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-divider{animation:draw calc(.3s * var(--draw-speed,1)) ease-out calc(.55s * var(--draw-speed,1)) both}
+    .el-note-r{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-note-l{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-circle{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.1s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-s{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.6s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+  </style></defs>
+  <g>
+    <path pathLength="1" class="cls-3 draw-rev el-cloud" d="M195.39,156.4H49.82s-41.32,1.93-41.32-38.95c0-37.37,38.71-40.71,38.71-40.71,0,0,.91-22.5,19.57-32.15,19.12-9.89,34.43.18,34.43.18,0,0,5.03-24.98,37.85-34.19,31.93-8.97,56.33,14.04,56.33,14.04"/>
+    <line pathLength="1" class="cls-1 draw el-divider" x1="222.66" y1="8.5" x2="222.66" y2="156.42"/>
+    <path pathLength="1" class="cls-2 draw el-note-r" d="M394.68,70.21c5.37-2.28,11.28-3.53,17.48-3.53,24.78,0,44.87,20.09,44.87,44.87s-20.09,44.87-44.87,44.87-44.87-20.09-44.87-44.87V9.06"/>
+    <path pathLength="1" class="cls-2 draw el-note-l" d="M312.94,152.26c-5.37,2.28-11.28,3.53-17.48,3.53-24.78,0-44.87-20.09-44.87-44.87,0-24.78,20.09-44.87,44.87-44.87s44.87,20.09,44.87,44.87c0,6.2,0,45.49,0,45.49"/>
+    <circle pathLength="1" class="cls-3 draw el-circle" cx="546.26" cy="92.48" r="63.94"/>
+    <path pathLength="1" class="cls-3 draw el-s" d="M636.41,136.15s7.35,20.27,36.3,20.27c28.96,0,35.74-23.88,35.74-30.88,0-11.32-2.39-25.63-36.02-33.02-33.63-7.4-36.02-22.98-36.02-33.02,0-7,6.78-30.88,35.74-30.88s36.3,20.27,36.3,20.27"/>
+  </g>
+</svg>
+<p id="splash-greeting" class="greeting"></p>
+</div>
+
+<!-- NAVBAR -->
+<labos-navbar
+  id="navbar"
+  breadcrumbs='[{"label":"Genetics"},{"label":"Setup"},{"label":"Genetic Status on Approval"}]'
+  user-name="Angela Doe"
+  user-org="LabOS laboratory">
+</labos-navbar>
+
+<!-- SCREEN BODY -->
+<main class="screen-body">
+
+  <div class="screen-top">
+    <div class="action-bar">
+      <labos-button variant="default" icon="add"       onclick="openAddDialog()">Add definition</labos-button>
+      <labos-button id="btn-edit"   variant="default" icon="mode_edit" onclick="openEditDialog()">Edit</labos-button>
+      <labos-button id="btn-delete" variant="default" icon="delete"    onclick="requireSelection('dialog-delete')">Delete</labos-button>
+    </div>
+    <div class="filter-zone">
+      <labos-autocomplete id="filter-user"      placeholder="User"             style="width:300px"></labos-autocomplete>
+      <labos-autocomplete id="filter-group"     placeholder="Permission group" style="width:300px"></labos-autocomplete>
+      <labos-autocomplete id="filter-procedure" placeholder="Procedure"        style="width:300px"></labos-autocomplete>
+    </div>
+  </div>
+
+  <labos-grid id="grid" title="Genetic Status on Approval" mode="infinity-scroll"></labos-grid>
+
+</main>
+
+<!-- DIALOG: Add definition -->
+<labos-dialog id="dialog-add" title="Add definition">
+  <div class="radio-group">
+    <labos-radio id="add-type-user"  name="add-type" value="user"  label="User"             checked></labos-radio>
+    <labos-radio id="add-type-group" name="add-type" value="group" label="Permission group"        ></labos-radio>
+  </div>
+  <labos-autocomplete id="add-subject" placeholder="User" mandatory></labos-autocomplete>
+  <div class="radio-group">
+    <labos-radio id="add-proc-all"    name="add-proc" value="all"    label="All procedures"  checked></labos-radio>
+    <labos-radio id="add-proc-select" name="add-proc" value="select" label="Select procedure"       ></labos-radio>
+  </div>
+  <labos-autocomplete id="add-proc" placeholder="Procedure" mandatory style="display:none"></labos-autocomplete>
+  <labos-autocomplete id="add-status-list" placeholder="Statuses list" mandatory></labos-autocomplete>
+  <div class="form-row">
+    <labos-autocomplete id="add-initial"  placeholder="Initial status"  mandatory></labos-autocomplete>
+    <labos-autocomplete id="add-approval" placeholder="Approval status" mandatory></labos-autocomplete>
+  </div>
+  <labos-button slot="footer" variant="default" cancel icon="close" onclick="closeDialog('dialog-add')">Cancel</labos-button>
+  <labos-button slot="footer" variant="accent"  icon="check" onclick="saveDefinition()">Add</labos-button>
+</labos-dialog>
+
+<!-- DIALOG: Edit definition -->
+<labos-dialog id="dialog-edit" title="Edit definition">
+  <div class="radio-group">
+    <labos-radio id="edit-type-user"  name="edit-type" value="user"  label="User"             checked></labos-radio>
+    <labos-radio id="edit-type-group" name="edit-type" value="group" label="Permission group"        ></labos-radio>
+  </div>
+  <labos-autocomplete id="edit-subject" placeholder="User" mandatory></labos-autocomplete>
+  <div class="radio-group">
+    <labos-radio id="edit-proc-all"    name="edit-proc" value="all"    label="All procedures"  checked></labos-radio>
+    <labos-radio id="edit-proc-select" name="edit-proc" value="select" label="Select procedure"       ></labos-radio>
+  </div>
+  <labos-autocomplete id="edit-proc" placeholder="Procedure" mandatory style="display:none"></labos-autocomplete>
+  <labos-autocomplete id="edit-status-list" placeholder="Statuses list" mandatory></labos-autocomplete>
+  <div class="form-row">
+    <labos-autocomplete id="edit-initial"  placeholder="Initial status"  mandatory></labos-autocomplete>
+    <labos-autocomplete id="edit-approval" placeholder="Approval status" mandatory></labos-autocomplete>
+  </div>
+  <labos-button slot="footer" variant="default" cancel icon="close" onclick="closeDialog('dialog-edit')">Cancel</labos-button>
+  <labos-button slot="footer" variant="accent"  icon="check" onclick="saveEdit()">Save</labos-button>
+</labos-dialog>
+
+<!-- DIALOG: Delete confirm -->
+<labos-dialog id="dialog-delete" title="Delete Definition" type="confirm">
+  <p>Are you sure you want to delete the selected definition(s)?</p>
+  <p class="delete-warn">This action cannot be undone.</p>
+  <labos-button slot="footer" variant="default" cancel icon="close" onclick="closeDialog('dialog-delete')">Cancel</labos-button>
+  <labos-button slot="footer" variant="warn" icon="delete" onclick="confirmDelete()">Delete definition</labos-button>
+</labos-dialog>
+
+<labos-alert id="alert-validation"   type="warning"></labos-alert>
+
+<script>
+  // ── Reference data ──────────────────────────────────────────────────────────
+  const STATUS_LISTS = [
+    { label: 'Molecular procedures',   value: 'mol-proc'  },
+    { label: 'Cytogenetic procedures', value: 'cyto-proc' },
+    { label: 'FISH',                   value: 'fish'      },
+  ];
+
+  const STATUSES_BY_LIST = {
+    'mol-proc':  ['Ready for Analysis', 'Tech Approval', 'First Approver', 'Second Approver', 'In Lab', 'Approved'],
+    'cyto-proc': ['Tech approval', 'In Lab', 'Approved'],
+    'fish':      ['Ready for Analysis', 'First Approver', 'Approved'],
+  };
+
+  const PROCEDURES = [
+    { code: '35011', name: 'Cystic Fibrosis' },
+    { code: '35012', name: 'BRCA1/2' },
+    { code: '35013', name: 'Fragile X' },
+    { code: '35014', name: 'Spinal Muscular Atrophy' },
+    { code: '35015', name: 'Huntington Disease' },
+  ];
+
+  const USERS = [
+    { code: '776',  name: 'Angela Doe' },
+    { code: '804',  name: 'Shiri Asher' },
+    { code: '1184', name: 'Mickael Elbaz' },
+    { code: '1201', name: 'Alice Johnson' },
+    { code: '1202', name: 'Bob Smith' },
+  ];
+
+  const PERM_GROUPS = [
+    { code: 'lab-mgr',     name: 'Lab managers' },
+    { code: 'gen-tech',    name: 'Genetics Technician' },
+    { code: 'gen-approver',name: 'Genetics Approver' },
+  ];
+
+  // ── Grid data ───────────────────────────────────────────────────────────────
+  let ALL_ROWS = [
+    { id:1, userCode:'776',  userName:'Angela Doe',    permGroup:'',             permGroupCode:'',          statusList:'mol-proc',  allProcs:true,  procCode:'',      procName:'',              initialStatus:'Ready for Analysis', approvalStatus:'Tech Approval'   },
+    { id:2, userCode:'776',  userName:'Angela Doe',    permGroup:'',             permGroupCode:'',          statusList:'cyto-proc', allProcs:true,  procCode:'',      procName:'',              initialStatus:'Tech approval',      approvalStatus:'Approved'        },
+    { id:3, userCode:'',     userName:'',              permGroup:'Lab managers', permGroupCode:'lab-mgr',   statusList:'mol-proc',  allProcs:false, procCode:'35011', procName:'Cystic Fibrosis', initialStatus:'Ready for Analysis', approvalStatus:'First Approver' },
+    { id:4, userCode:'1201', userName:'Alice Johnson', permGroup:'',             permGroupCode:'',          statusList:'fish',      allProcs:true,  procCode:'',      procName:'',              initialStatus:'Ready for Analysis', approvalStatus:'First Approver'  },
+    { id:5, userCode:'1201', userName:'Alice Johnson', permGroup:'',             permGroupCode:'',          statusList:'mol-proc',  allProcs:true,  procCode:'',      procName:'',              initialStatus:'First Approver',     approvalStatus:'Second Approver' },
+    { id:6, userCode:'1202', userName:'Bob Smith',     permGroup:'',             permGroupCode:'',          statusList:'cyto-proc', allProcs:true,  procCode:'',      procName:'',              initialStatus:'Ready for Analysis', approvalStatus:'Tech Approval'   },
+  ];
+  let nextId = 7;
+  let currentRows = [...ALL_ROWS];
+  let gridSelectionIndices = [];
+  let editingRowId = null;
+
+  // ── Columns ─────────────────────────────────────────────────────────────────
+  const COLUMNS = [
+    { field: 'userName',       label: 'User name' },
+    { field: 'permGroup',      label: 'Permission group' },
+    { field: 'statusListName', label: 'Statuses list' },
+    { field: '_proc',          label: 'Procedure',       render: (v, row) => row.allProcs ? 'All' : row.procName },
+    { field: 'initialStatus',  label: 'Initial status' },
+    { field: 'approvalStatus', label: 'Approval status' },
+  ];
+
+  // ── Grid ────────────────────────────────────────────────────────────────────
+  const grid = document.getElementById('grid');
+
+  function rowsForGrid(rows) {
+    const listMap = Object.fromEntries(STATUS_LISTS.map(s => [s.value, s.label]));
+    return rows.map(r => ({ ...r, statusListName: listMap[r.statusList] || r.statusList }));
+  }
+
+  function applyFilters() {
+    const userVal  = filterUser.value  || '';
+    const groupVal = filterGroup.value || '';
+    const procVal  = filterProc.value  || '';
+
+    currentRows = ALL_ROWS.filter(r => {
+      if (userVal  && r.userCode !== userVal)       return false;
+      if (groupVal && r.permGroupCode !== groupVal) return false;
+      if (procVal  && !r.allProcs && r.procCode !== procVal) return false;
+      return true;
+    });
+
+    grid.setData(COLUMNS, rowsForGrid(currentRows));
+    gridSelectionIndices = [];
+  }
+
+  // ── Filters ─────────────────────────────────────────────────────────────────
+  const filterUser  = document.getElementById('filter-user');
+  const filterGroup = document.getElementById('filter-group');
+  const filterProc  = document.getElementById('filter-procedure');
+
+  filterUser.setOptions(USERS.map(u => ({ label: u.name, row2: u.code, value: u.code })));
+  filterGroup.setOptions(PERM_GROUPS.map(g => ({ label: g.name, value: g.code })));
+  filterProc.setOptions(PROCEDURES.map(p => ({ label: p.name, row2: p.code, value: p.code })));
+
+  filterUser.addEventListener('labos-select',  applyFilters);
+  filterGroup.addEventListener('labos-select', applyFilters);
+  filterProc.addEventListener('labos-select',  applyFilters);
+
+  grid.addEventListener('labos-selection-change', e => {
+    gridSelectionIndices = [...e.detail.indices].sort((a, b) => a - b);
+  });
+
+  applyFilters();
+
+  // ── Dialog helpers ───────────────────────────────────────────────────────────
+  function openDialog(id)  { document.getElementById(id).show(); }
+  function closeDialog(id) { document.getElementById(id).hide(); }
+
+  function requireSelection(dialogId) {
+    if (gridSelectionIndices.length === 0) {
+      openDialog('dialog-no-selection');
+      return;
+    }
+    openDialog(dialogId);
+  }
+
+  // ── Dialog: Add ─────────────────────────────────────────────────────────────
+  let _addType     = 'user';
+  let _addProcMode = 'all';
+
+  const addTypeUser   = document.getElementById('add-type-user');
+  const addTypeGroup  = document.getElementById('add-type-group');
+  const addSubject    = document.getElementById('add-subject');
+  const addProcAll    = document.getElementById('add-proc-all');
+  const addProcSelect = document.getElementById('add-proc-select');
+  const addProcField  = document.getElementById('add-proc');
+  const addStatusList = document.getElementById('add-status-list');
+  const addInitial    = document.getElementById('add-initial');
+  const addApproval   = document.getElementById('add-approval');
+
+  addSubject.setOptions(USERS.map(u => ({ label: u.name, row2: u.code, value: u.code })));
+  addProcField.setOptions(PROCEDURES.map(p => ({ label: p.name, row2: p.code, value: p.code })));
+  addStatusList.setOptions(STATUS_LISTS);
+
+  addTypeUser.addEventListener('labos-change', e => {
+    if (!e.detail.checked) return;
+    _addType = 'user';
+    addSubject.setAttribute('placeholder', 'User');
+    addSubject.setOptions(USERS.map(u => ({ label: u.name, row2: u.code, value: u.code })));
+    addSubject.value = '';
+    addSubject.removeAttribute('invalid');
+  });
+
+  addTypeGroup.addEventListener('labos-change', e => {
+    if (!e.detail.checked) return;
+    _addType = 'group';
+    addSubject.setAttribute('placeholder', 'Permission group');
+    addSubject.setOptions(PERM_GROUPS.map(g => ({ label: g.name, value: g.code })));
+    addSubject.value = '';
+    addSubject.removeAttribute('invalid');
+  });
+
+  addProcAll.addEventListener('labos-change', e => {
+    if (!e.detail.checked) return;
+    _addProcMode = 'all';
+    addProcField.style.display = 'none';
+    addProcField.value = '';
+    addProcField.removeAttribute('invalid');
+  });
+
+  addProcSelect.addEventListener('labos-change', e => {
+    if (!e.detail.checked) return;
+    _addProcMode = 'select';
+    addProcField.style.display = '';
+  });
+
+  addStatusList.addEventListener('labos-select', () => {
+    const opts = (STATUSES_BY_LIST[addStatusList.value] || []).map(s => ({ label: s, value: s }));
+    addInitial.setOptions(opts);  addInitial.value  = '';
+    addApproval.setOptions(opts); addApproval.value = '';
+    addInitial.removeAttribute('invalid');
+    addApproval.removeAttribute('invalid');
+  });
+
+  function openAddDialog() {
+    _addType = 'user';
+    addTypeUser.setAttribute('checked', '');
+    addTypeGroup.removeAttribute('checked');
+    addSubject.setAttribute('placeholder', 'User');
+    addSubject.setOptions(USERS.map(u => ({ label: u.name, row2: u.code, value: u.code })));
+    addSubject.value = '';
+    addSubject.removeAttribute('invalid');
+
+    _addProcMode = 'all';
+    addProcAll.setAttribute('checked', '');
+    addProcSelect.removeAttribute('checked');
+    addProcField.style.display = 'none';
+    addProcField.value = '';
+    addProcField.removeAttribute('invalid');
+
+    addStatusList.value = '';
+    addStatusList.removeAttribute('invalid');
+    addInitial.value  = ''; addInitial.setOptions([]);  addInitial.removeAttribute('invalid');
+    addApproval.value = ''; addApproval.setOptions([]); addApproval.removeAttribute('invalid');
+
+    openDialog('dialog-add');
+  }
+
+  function saveDefinition() {
+    let firstInvalid = null;
+    const mark = el => { el.setAttribute('invalid', ''); if (!firstInvalid) firstInvalid = el; };
+
+    if (!addSubject.value)    mark(addSubject);
+    if (!addStatusList.value) mark(addStatusList);
+    if (_addProcMode === 'select' && !addProcField.value) mark(addProcField);
+    if (!addInitial.value)    mark(addInitial);
+    if (!addApproval.value)   mark(addApproval);
+
+    if (firstInvalid) { firstInvalid.focus?.(); return; }
+
+    const user  = _addType === 'user'  ? USERS.find(u => u.code === addSubject.value)       : null;
+    const group = _addType === 'group' ? PERM_GROUPS.find(g => g.code === addSubject.value) : null;
+    const allProcs = _addProcMode === 'all';
+    const proc  = !allProcs ? PROCEDURES.find(p => p.code === addProcField.value) : null;
+
+    ALL_ROWS.push({
+      id: nextId++,
+      userCode:      user?.code  || '',
+      userName:      user?.name  || '',
+      permGroup:     group?.name || '',
+      permGroupCode: group?.code || '',
+      statusList:    addStatusList.value,
+      allProcs,
+      procCode:      allProcs ? '' : addProcField.value,
+      procName:      allProcs ? '' : (proc?.name || ''),
+      initialStatus:  addInitial.value,
+      approvalStatus: addApproval.value,
+    });
+    applyFilters();
+    closeDialog('dialog-add');
+  }
+
+  // ── Dialog: Edit ────────────────────────────────────────────────────────────
+  let _editType     = 'user';
+  let _editProcMode = 'all';
+
+  const editTypeUser   = document.getElementById('edit-type-user');
+  const editTypeGroup  = document.getElementById('edit-type-group');
+  const editSubject    = document.getElementById('edit-subject');
+  const editProcAll    = document.getElementById('edit-proc-all');
+  const editProcSelect = document.getElementById('edit-proc-select');
+  const editProcField  = document.getElementById('edit-proc');
+  const editStatusList = document.getElementById('edit-status-list');
+  const editInitial    = document.getElementById('edit-initial');
+  const editApproval   = document.getElementById('edit-approval');
+
+  editSubject.setOptions(USERS.map(u => ({ label: u.name, row2: u.code, value: u.code })));
+  editProcField.setOptions(PROCEDURES.map(p => ({ label: p.name, row2: p.code, value: p.code })));
+  editStatusList.setOptions(STATUS_LISTS);
+
+  editTypeUser.addEventListener('labos-change', e => {
+    if (!e.detail.checked) return;
+    _editType = 'user';
+    editSubject.setAttribute('placeholder', 'User');
+    editSubject.setOptions(USERS.map(u => ({ label: u.name, row2: u.code, value: u.code })));
+    editSubject.value = '';
+    editSubject.removeAttribute('invalid');
+  });
+
+  editTypeGroup.addEventListener('labos-change', e => {
+    if (!e.detail.checked) return;
+    _editType = 'group';
+    editSubject.setAttribute('placeholder', 'Permission group');
+    editSubject.setOptions(PERM_GROUPS.map(g => ({ label: g.name, value: g.code })));
+    editSubject.value = '';
+    editSubject.removeAttribute('invalid');
+  });
+
+  editProcAll.addEventListener('labos-change', e => {
+    if (!e.detail.checked) return;
+    _editProcMode = 'all';
+    editProcField.style.display = 'none';
+    editProcField.value = '';
+    editProcField.removeAttribute('invalid');
+  });
+
+  editProcSelect.addEventListener('labos-change', e => {
+    if (!e.detail.checked) return;
+    _editProcMode = 'select';
+    editProcField.style.display = '';
+  });
+
+  editStatusList.addEventListener('labos-select', () => {
+    const opts = (STATUSES_BY_LIST[editStatusList.value] || []).map(s => ({ label: s, value: s }));
+    editInitial.setOptions(opts);  editInitial.value  = '';
+    editApproval.setOptions(opts); editApproval.value = '';
+    editInitial.removeAttribute('invalid');
+    editApproval.removeAttribute('invalid');
+  });
+
+  function openEditDialog() {
+    if (gridSelectionIndices.length !== 1) {
+      openDialog('dialog-no-selection');
+      return;
+    }
+    const row = currentRows[gridSelectionIndices[0]];
+    editingRowId = row.id;
+
+    if (row.userCode) {
+      _editType = 'user';
+      editTypeUser.setAttribute('checked', '');
+      editTypeGroup.removeAttribute('checked');
+      editSubject.setAttribute('placeholder', 'User');
+      editSubject.setOptions(USERS.map(u => ({ label: u.name, row2: u.code, value: u.code })));
+      editSubject.value = row.userCode;
+    } else {
+      _editType = 'group';
+      editTypeGroup.setAttribute('checked', '');
+      editTypeUser.removeAttribute('checked');
+      editSubject.setAttribute('placeholder', 'Permission group');
+      editSubject.setOptions(PERM_GROUPS.map(g => ({ label: g.name, value: g.code })));
+      editSubject.value = row.permGroupCode;
+    }
+    editSubject.removeAttribute('invalid');
+
+    if (row.allProcs) {
+      _editProcMode = 'all';
+      editProcAll.setAttribute('checked', '');
+      editProcSelect.removeAttribute('checked');
+      editProcField.style.display = 'none';
+      editProcField.value = '';
+    } else {
+      _editProcMode = 'select';
+      editProcSelect.setAttribute('checked', '');
+      editProcAll.removeAttribute('checked');
+      editProcField.style.display = '';
+      editProcField.value = row.procCode;
+    }
+    editProcField.removeAttribute('invalid');
+
+    editStatusList.value = row.statusList;
+    editStatusList.removeAttribute('invalid');
+    const opts = (STATUSES_BY_LIST[row.statusList] || []).map(s => ({ label: s, value: s }));
+    editInitial.setOptions(opts);
+    editApproval.setOptions(opts);
+    editInitial.value  = row.initialStatus;
+    editApproval.value = row.approvalStatus;
+    editInitial.removeAttribute('invalid');
+    editApproval.removeAttribute('invalid');
+
+    openDialog('dialog-edit');
+  }
+
+  function saveEdit() {
+    let firstInvalid = null;
+    const mark = el => { el.setAttribute('invalid', ''); if (!firstInvalid) firstInvalid = el; };
+
+    if (!editSubject.value)    mark(editSubject);
+    if (!editStatusList.value) mark(editStatusList);
+    if (_editProcMode === 'select' && !editProcField.value) mark(editProcField);
+    if (!editInitial.value)    mark(editInitial);
+    if (!editApproval.value)   mark(editApproval);
+
+    if (firstInvalid) { firstInvalid.focus?.(); return; }
+
+    const user  = _editType === 'user'  ? USERS.find(u => u.code === editSubject.value)       : null;
+    const group = _editType === 'group' ? PERM_GROUPS.find(g => g.code === editSubject.value) : null;
+    const allProcs = _editProcMode === 'all';
+    const proc  = !allProcs ? PROCEDURES.find(p => p.code === editProcField.value) : null;
+    const idx   = ALL_ROWS.findIndex(r => r.id === editingRowId);
+
+    if (idx >= 0) {
+      ALL_ROWS[idx] = {
+        ...ALL_ROWS[idx],
+        userCode:      user?.code  || '',
+        userName:      user?.name  || '',
+        permGroup:     group?.name || '',
+        permGroupCode: group?.code || '',
+        statusList:    editStatusList.value,
+        allProcs,
+        procCode:      allProcs ? '' : editProcField.value,
+        procName:      allProcs ? '' : (proc?.name || ''),
+        initialStatus:  editInitial.value,
+        approvalStatus: editApproval.value,
+      };
+    }
+    applyFilters();
+    closeDialog('dialog-edit');
+  }
+
+  // ── Delete ──────────────────────────────────────────────────────────────────
+  function confirmDelete() {
+    const idsToDelete = new Set(gridSelectionIndices.map(i => currentRows[i].id));
+    ALL_ROWS = ALL_ROWS.filter(r => !idsToDelete.has(r.id));
+    gridSelectionIndices = [];
+    applyFilters();
+    closeDialog('dialog-delete');
+  }
+</script>
+<script>
+  (function() {
+    var s = document.getElementById('splash');
+    var h = new Date().getHours();
+    var g = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+    var parts = (document.querySelector('labos-navbar')?.getAttribute('user-name') || '').trim().split(/\s+/);
+    var first = /^(Dr\.|Prof\.|Mr\.|Mrs\.|Ms\.)$/i.test(parts[0]) ? (parts[1] || '') : (parts[0] || '');
+    document.getElementById('splash-greeting').textContent = first ? g + ', ' + first : g;
+    setTimeout(function() {
+      s.classList.add('fade-out');
+      s.addEventListener('transitionend', function() { s.remove(); }, { once: true });
+    }, 3000);
+  })();
+</script>
+
+<!-- DIALOG — No selection -->
+<labos-dialog id="dialog-no-selection" type="warning" title="Selection required">
+  <p style="font-size:14px;color:#333">Please select at least one item</p>
+  <labos-button slot="footer" variant="default" icon="check" onclick="closeDialog('dialog-no-selection')">OK</labos-button>
+</labos-dialog>
+</body>
+</html>

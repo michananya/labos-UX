@@ -1,0 +1,284 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workbenches — LabOS</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<script src="../shared/labos-components.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+    background: #ffffff;
+    color: #333;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  :root {
+    --primary:      #265F68;
+    --primary-dark: #1F5156;
+    --primary-20:   #D5E0E1;
+    --warn:         #D20000;
+    --surface:      #F5F5F5;
+    --white:        #ffffff;
+  }
+
+  labos-navbar { flex-shrink: 0; }
+
+  .screen-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+
+  .screen-top { padding: 16px 16px 0; flex-shrink: 0; }
+
+  .search-zone { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+  .action-bar {
+    display: flex; align-items: center; gap: 10px;
+    height: 36px; margin-top: 16px; flex-shrink: 0;
+  }
+
+  labos-grid { margin: 0 16px; }
+
+  /* ── Splash screen ── */
+  #splash {
+    position: fixed; inset: 0; background: #fff;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 9999; transition: opacity 0.6s ease;
+    --draw-speed: 0.75;
+  }
+  #splash.fade-out { opacity: 0; pointer-events: none; }
+  #splash svg { width: 300px; }
+  #splash .greeting {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 18px; font-weight: 300; color: #333;
+    margin-top: 28px; opacity: 0;
+    animation: splashGreeting 0.8s ease 0.7s both;
+  }
+  @keyframes splashGreeting {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ Splash ══════════════════════════════════════════════════════════════ -->
+<div id="splash"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 716.95 164.92">
+  <defs><style>
+    .cls-1,.cls-2{stroke:#333}.cls-1,.cls-2,.cls-3{fill:none;stroke-linecap:round;stroke-width:17px}.cls-1,.cls-3{stroke-linejoin:round}.cls-2{stroke-miterlimit:10}.cls-3{stroke:#00b08a}
+    .draw{stroke-dasharray:1;stroke-dashoffset:1}.draw-rev{stroke-dasharray:1;stroke-dashoffset:-1}
+    @keyframes draw{to{stroke-dashoffset:0}}
+    @keyframes breathe{0%,100%{stroke-opacity:1}50%{stroke-opacity:.72}}
+    .el-cloud{animation:draw calc(.85s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.05s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-divider{animation:draw calc(.3s * var(--draw-speed,1)) ease-out calc(.55s * var(--draw-speed,1)) both}
+    .el-note-r{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-note-l{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(.75s * var(--draw-speed,1)) both}
+    .el-circle{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.1s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+    .el-s{animation:draw calc(.8s * var(--draw-speed,1)) cubic-bezier(.42,0,.58,1) calc(1.6s * var(--draw-speed,1)) both,breathe 3.2s ease-in-out calc(2.2s * var(--draw-speed,1)) infinite}
+  </style></defs>
+  <g>
+    <path pathLength="1" class="cls-3 draw-rev el-cloud" d="M195.39,156.4H49.82s-41.32,1.93-41.32-38.95c0-37.37,38.71-40.71,38.71-40.71,0,0,.91-22.5,19.57-32.15,19.12-9.89,34.43.18,34.43.18,0,0,5.03-24.98,37.85-34.19,31.93-8.97,56.33,14.04,56.33,14.04"/>
+    <line pathLength="1" class="cls-1 draw el-divider" x1="222.66" y1="8.5" x2="222.66" y2="156.42"/>
+    <path pathLength="1" class="cls-2 draw el-note-r" d="M394.68,70.21c5.37-2.28,11.28-3.53,17.48-3.53,24.78,0,44.87,20.09,44.87,44.87s-20.09,44.87-44.87,44.87-44.87-20.09-44.87-44.87V9.06"/>
+    <path pathLength="1" class="cls-2 draw el-note-l" d="M312.94,152.26c-5.37,2.28-11.28,3.53-17.48,3.53-24.78,0-44.87-20.09-44.87-44.87,0-24.78,20.09-44.87,44.87-44.87s44.87,20.09,44.87,44.87c0,6.2,0,45.49,0,45.49"/>
+    <circle pathLength="1" class="cls-3 draw el-circle" cx="546.26" cy="92.48" r="63.94"/>
+    <path pathLength="1" class="cls-3 draw el-s" d="M636.41,136.15s7.35,20.27,36.3,20.27c28.96,0,35.74-23.88,35.74-30.88,0-11.32-2.39-25.63-36.02-33.02-33.63-7.4-36.02-22.98-36.02-33.02,0-7,6.78-30.88,35.74-30.88s36.3,20.27,36.3,20.27"/>
+  </g>
+</svg>
+<p id="splash-greeting" class="greeting"></p>
+</div>
+
+<!-- ══ Navbar ═══════════════════════════════════════════════════════════════ -->
+<labos-navbar
+  breadcrumbs='[{"label":"Workbenches & devices","route":"workbenches-devices.html"},{"label":"Workbenches"}]'
+  user-name="Angela Doe"
+  lab-name="LabOS laboratory">
+</labos-navbar>
+
+<!-- ══ Screen body ══════════════════════════════════════════════════════════ -->
+<div class="screen-body">
+  <div class="screen-top">
+
+    <!-- Search + add -->
+    <div class="search-zone">
+      <labos-rounded-search id="main-search" placeholder="Search for workbench" style="width:300px"></labos-rounded-search>
+      <labos-button id="btn-add" shape="rounded" icon="add" title="Add workbench"></labos-button>
+    </div>
+
+    <!-- Action bar -->
+    <div class="action-bar">
+      <labos-button id="btn-print" icon="print">Print</labos-button>
+      <labos-button id="btn-duplicate" icon="content_copy">Duplicate</labos-button>
+      <labos-split-button id="btn-unavailable" icon="toggle_off" label="Set as unavailable"></labos-split-button>
+      <labos-split-button id="btn-inactive"    icon="toggle_off" label="Set as inactive"></labos-split-button>
+    </div>
+
+  </div>
+
+  <!-- Grid -->
+  <labos-grid id="grid" title="Workbenches"></labos-grid>
+
+</div>
+
+<!-- ══ No-selection dialog ══════════════════════════════════════════════════ -->
+<labos-dialog id="dialog-no-selection" type="warning" title="Selection required">
+  <p style="font-size:14px;color:#333">Please select at least one item</p>
+  <labos-button slot="footer" variant="default" icon="check" onclick="document.getElementById('dialog-no-selection').hide()">OK</labos-button>
+</labos-dialog>
+
+<!-- ══ Splash JS ════════════════════════════════════════════════════════════ -->
+<script>
+  (function() {
+    var s = document.getElementById('splash');
+    var isReload = (performance.getEntriesByType('navigation')[0] || {}).type === 'reload';
+    var fromNav  = sessionStorage.getItem('labos_nav') === '1';
+    sessionStorage.removeItem('labos_nav');
+    if (!isReload && fromNav) { s.remove(); return; }
+    var h = new Date().getHours();
+    var g = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+    var parts = (document.querySelector('labos-navbar')?.getAttribute('user-name') || '').trim().split(/\s+/);
+    var first = /^(Dr\.|Prof\.|Mr\.|Mrs\.|Ms\.)$/i.test(parts[0]) ? (parts[1] || '') : (parts[0] || '');
+    document.getElementById('splash-greeting').textContent = first ? g + ', ' + first : g;
+    setTimeout(function() {
+      s.classList.add('fade-out');
+      s.addEventListener('transitionend', function() { s.remove(); }, { once: true });
+    }, 3000);
+  })();
+</script>
+
+<script>
+  // Set nav flag before any same-tab link navigation
+  document.addEventListener('click', function(e) {
+    var path = e.composedPath ? e.composedPath() : [];
+    var a = path.find(function(el) { return el.tagName === 'A' && el.href && !el.target; });
+    if (a && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+      sessionStorage.setItem('labos_nav', '1');
+    }
+  }, true);
+</script>
+
+<script>
+  // ── Data ────────────────────────────────────────────────────────────────
+  let ALL_ROWS = [
+    { code: '701',  name: 'ACL1',      group: 'ACL',     type: 'Host request',   site: 'Netlims NJ Laboratory', available: true,  active: true  },
+    { code: '723',  name: 'ACL2',      group: 'ACL',     type: 'Host request',   site: 'Netlims NJ Laboratory', available: true,  active: true  },
+    { code: '1209', name: 'ACL3',      group: 'ACL',     type: 'Host request',   site: 'Netlims NJ Laboratory', available: true,  active: false },
+    { code: '1987', name: 'IMAX1',     group: 'IMAX',    type: 'Unidirectional', site: 'Netlims NJ Laboratory', available: true,  active: true  },
+    { code: '2006', name: 'IMAX2',     group: 'IMAX',    type: 'Unidirectional', site: 'Netlims NJ Laboratory', available: false, active: false },
+    { code: '2009', name: 'IMAX3',     group: 'IMAX',    type: 'Unidirectional', site: 'Netlims NJ Laboratory', available: false, active: false },
+    { code: '2039', name: 'BARCODE_A', group: 'BARCODE', type: 'Bidirectional',  site: 'Netlims NJ Laboratory', available: true,  active: false },
+    { code: '2102', name: 'BARCODE_B', group: 'BARCODE', type: 'Bidirectional',  site: 'Netlims NJ Laboratory', available: true,  active: false },
+    { code: '2204', name: 'BARCODE_C', group: 'BARCODE', type: 'Bidirectional',  site: 'Netlims NJ Laboratory', available: true,  active: true  },
+    { code: '2342', name: 'LX1',       group: 'LX',      type: 'Host request',   site: 'Netlims NJ Laboratory', available: true,  active: true  },
+  ];
+  let nextCode = Math.max(...ALL_ROWS.map(r => parseInt(r.code))) + 1;
+  let searchText = '';
+
+  const COLUMNS = [
+    { field: 'code',      label: 'Code',            sortable: true, filterable: true },
+    { field: 'name',      label: 'Workbench name',  sortable: true, filterable: true,
+      render: (val, row) => `<a href="workbench-details.html?code=${encodeURIComponent(row.code)}" onclick="sessionStorage.setItem('labos_nav','1')" style="color:#265F68;font-weight:600;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${val}</a>` },
+    { field: 'group',     label: 'Group',            sortable: true, filterable: true },
+    { field: 'type',      label: 'Type',             sortable: true, filterable: true },
+    { field: 'site',      label: 'Performing site',  sortable: true, filterable: true },
+    { field: 'available', label: 'Available', icon: 'done', type: 'icon-only' },
+    { field: 'active',    label: 'Active',    icon: 'done', type: 'icon-only' },
+  ];
+
+  // ── Grid ─────────────────────────────────────────────────────────────────
+  const grid = document.getElementById('grid');
+
+  function applyFilters() {
+    const q = searchText.toLowerCase();
+    const rows = q ? ALL_ROWS.filter(r =>
+      r.name.toLowerCase().includes(q) || r.code.includes(q) || r.group.toLowerCase().includes(q)
+    ) : ALL_ROWS;
+    grid.setData(COLUMNS, rows);
+  }
+
+  applyFilters();
+
+  // Double-click on a row → navigate to workbench details
+  grid.addEventListener('dblclick', () => {
+    const sel = grid.selectedRows;
+    if (sel.length > 0) {
+      sessionStorage.setItem('labos_nav','1'); window.location.href = 'workbench-details.html?code=' + encodeURIComponent(sel[0].code);
+    }
+  });
+
+  // ── Search ───────────────────────────────────────────────────────────────
+  const search = document.getElementById('main-search');
+  search.addEventListener('labos-input', e => {
+    searchText = e.detail?.value || '';
+    applyFilters();
+  });
+
+  // ── Action buttons ───────────────────────────────────────────────────────
+  function requireSelection(fn) {
+    if (!grid.selectedRows.length) {
+      document.getElementById('dialog-no-selection').show();
+    } else {
+      fn();
+    }
+  }
+
+  document.getElementById('btn-print').addEventListener('click', () =>
+    requireSelection(() => window.print()));
+
+  // Duplicate
+  document.getElementById('btn-duplicate').addEventListener('click', () =>
+    requireSelection(() => {
+      grid.selectedRows.forEach(row => {
+        ALL_ROWS.push({ ...row, code: String(nextCode++) });
+      });
+      applyFilters();
+      LabosToast.show('Workbench duplicated.', 'success');
+    }));
+
+  // Set as unavailable / available
+  function setAvailability(value) {
+    requireSelection(() => {
+      grid.selectedRows.forEach(row => {
+        const r = ALL_ROWS.find(r => r.code === row.code);
+        if (r) r.available = (value === 'available');
+      });
+      applyFilters();
+      LabosToast.show(`Workbench set as ${value}.`, 'success');
+    });
+  }
+  document.getElementById('btn-unavailable').setItems([
+    { label: 'Set as unavailable', value: 'unavailable' },
+    { label: 'Set as available',   value: 'available'   },
+  ]);
+  document.getElementById('btn-unavailable').addEventListener('labos-action', () => setAvailability('unavailable'));
+  document.getElementById('btn-unavailable').addEventListener('labos-select', e => setAvailability(e.detail.value));
+
+  // Set as inactive / active
+  function setActive(value) {
+    requireSelection(() => {
+      grid.selectedRows.forEach(row => {
+        const r = ALL_ROWS.find(r => r.code === row.code);
+        if (r) r.active = (value === 'active');
+      });
+      applyFilters();
+      LabosToast.show(`Workbench set as ${value}.`, 'success');
+    });
+  }
+  document.getElementById('btn-inactive').setItems([
+    { label: 'Set as inactive', value: 'inactive' },
+    { label: 'Set as active',   value: 'active'   },
+  ]);
+  document.getElementById('btn-inactive').addEventListener('labos-action', () => setActive('inactive'));
+  document.getElementById('btn-inactive').addEventListener('labos-select', e => setActive(e.detail.value));
+
+  // ── Add ──────────────────────────────────────────────────────────────────
+  document.getElementById('btn-add').addEventListener('click', () =>
+    console.log('Add workbench'));
+</script>
+
+</body>
+</html>
